@@ -6,17 +6,6 @@ export type Channels = 'ipc-example';
 
 const electronHandler = {
   ipcRenderer: {
-//     send: async (channel: string, args: any) => {
-//       // whitelist channels
-//       let validChannels = [
-//           'loadScript'
-//       ];
-//     if (validChannels.includes(channel)) {
-//         return await ipcRenderer.invoke(channel, args);
-//     } else {
-//         throw `Invalid channel: ${channel}`;
-//     }
-//   },
     sendMessage: async (channel: Channels, ...args: unknown[]) => {
       return await ipcRenderer.invoke(channel, ...args);
     },

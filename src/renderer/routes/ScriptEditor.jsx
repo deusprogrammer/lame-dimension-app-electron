@@ -55,7 +55,11 @@ function App() {
 
     useEffect(() => {
         loadScript();
-    }, [user, id]);
+        return window.electron.ipcRenderer.on('start-save-file', () => {
+            let chapters = storeScene();
+            window.electron.ipcRenderer.sendMessage('save-file', {...script, chapters});
+        });
+    }, [script]);
 
     const deepCopyObject = (object) => {
         return JSON.parse(JSON.stringify(object));
@@ -76,8 +80,11 @@ function App() {
     const loadScript = async () => {
         try {
             const script = await window.electron.ipcRenderer.sendMessage("loadScript");
+            script.name = await window.electron.ipcRenderer.sendMessage("getScriptName");
 
-            console.log(JSON.stringify(script, null, 5));
+            if (!script.name) {
+                script.name = "New Script";
+            }
 
             setChapters(script.chapters);
             setScript(script);
@@ -319,24 +326,6 @@ function App() {
                             <tr>
                                 <td>Name</td>
                                 <td>{script.name}</td>
-                            </tr>
-                            <tr>
-                                <td>Editor</td>
-                                <td>{script.editor}</td>
-                            </tr>
-                            <tr>
-                                <td>Mode</td>
-                                <td>
-                                    {editable ? (
-                                        <span style={{ color: 'green' }}>
-                                            Editing
-                                        </span>
-                                    ) : (
-                                        <span style={{ color: 'red' }}>
-                                            Read Only
-                                        </span>
-                                    )}
-                                </td>
                             </tr>
                         </tbody>
                     </table>

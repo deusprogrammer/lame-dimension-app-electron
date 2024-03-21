@@ -76,7 +76,16 @@ function App() {
                             );
                         }}
                     >
-                        Script Editor
+                        Dialogue Editor
+                    </button>
+                    <button
+                        onClick={() => {
+                            navigate(
+                                `/editor/scripts`
+                            );
+                        }}
+                    >
+                        Character Editor
                     </button>
                     <button
                         onClick={() => {
