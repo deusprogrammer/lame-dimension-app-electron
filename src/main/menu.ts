@@ -109,6 +109,7 @@ export default class MenuBuilder {
                     label: 'Clone',
                     accelerator: 'Command+Shift+C',
                     selector: 'clone:',
+                    enabled: false
                 },
                 { type: 'separator' },
                 { label: 'Save', accelerator: 'Command+S', selector: 'save:', click: this.saveFile },
@@ -116,6 +117,7 @@ export default class MenuBuilder {
                     label: 'Merge',
                     accelerator: 'Command+M',
                     selector: 'merge:',
+                    enabled: false
                 },
             ],
         };
@@ -130,10 +132,12 @@ export default class MenuBuilder {
                 submenu: [
                     { label: '&New', accelerator: 'Ctrl+N' },
                     { label: '&Open', accelerator: 'Ctrl+O', click: this.openFile },
-                    { label: '&Clone', accelerator: 'Ctrl+Shift+C' },
+                    { label: '&Clone', accelerator: 'Ctrl+Shift+C',
+                    enabled: false },
                     { type: 'separator' },
                     { label: '&Save', accelerator: 'Ctrl+S', click: this.saveFile },
-                    { label: '&Merge', accelerator: 'Ctrl+M' },
+                    { label: '&Merge', accelerator: 'Ctrl+M',
+                    enabled: false },
                 ],
             },
         ];
