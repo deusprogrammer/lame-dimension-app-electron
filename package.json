@@ -1,5 +1,5 @@
 {
-  "description": "A foundation for scalable desktop apps",
+  "description": "An app for modifying game scripts",
   "keywords": [
     "electron",
     "boilerplate",
@@ -11,13 +11,13 @@
     "hot",
     "reload"
   ],
-  "homepage": "https://github.com/electron-react-boilerplate/electron-react-boilerplate#readme",
+  "homepage": "https://github.com/deusprogrammer/lame-dimension-app-electron/electron-react-boilerplate#readme",
   "bugs": {
-    "url": "https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues"
+    "url": "https://github.com/deusprogrammer/lame-dimension-app-electron/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron-react-boilerplate/electron-react-boilerplate.git"
+    "url": "git+https://github.com/deusprogrammer/lame-dimension-app-electron.git"
   },
   "license": "MIT",
   "author": {
@@ -27,9 +27,9 @@
   },
   "contributors": [
     {
-      "name": "Amila Welihinda",
-      "email": "amilajack@gmail.com",
-      "url": "https://github.com/amilajack"
+      "name": "Michael Main",
+      "email": "deusprogrammer@gmail.com",
+      "url": "https://github.com/deusprogrammer"
     }
   ],
   "main": "./src/main/main.ts",
@@ -242,8 +242,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "electron-react-boilerplate",
-      "repo": "electron-react-boilerplate"
+      "owner": "deusprogrammer",
+      "repo": "lame-dimension-app-electron"
     }
   },
   "collective": {
