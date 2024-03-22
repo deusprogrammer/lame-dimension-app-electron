@@ -8,15 +8,10 @@ import {
     dialog,
 } from 'electron';
 
-interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
-    selector?: string;
-    submenu?: DarwinMenuItemConstructorOptions[] | Menu;
-}
-
 export default class MenuBuilder {
-    mainWindow: BrowserWindow;
+    mainWindow;
 
-    constructor(mainWindow: BrowserWindow) {
+    constructor(mainWindow) {
         this.mainWindow = mainWindow;
     }
 
@@ -36,7 +31,7 @@ export default class MenuBuilder {
         this.mainWindow.reload();
     }
 
-    buildMenu(): Menu {
+    buildMenu() {
         if (
             process.env.NODE_ENV === 'development' ||
             process.env.DEBUG_PROD === 'true'
@@ -55,7 +50,7 @@ export default class MenuBuilder {
         return menu;
     }
 
-    setupDevelopmentEnvironment(): void {
+    setupDevelopmentEnvironment() {
         this.mainWindow.webContents.on('context-menu', (_, props) => {
             const { x, y } = props;
 
@@ -70,8 +65,8 @@ export default class MenuBuilder {
         });
     }
 
-    buildDarwinTemplate(): MenuItemConstructorOptions[] {
-        const subMenuAbout: DarwinMenuItemConstructorOptions = {
+    buildDarwinTemplate() {
+        const subMenuAbout = {
             label: 'Electron',
             submenu: [
                 {
@@ -103,7 +98,7 @@ export default class MenuBuilder {
             ],
         };
 
-        const subMenuFile: DarwinMenuItemConstructorOptions = {
+        const subMenuFile = {
             label: 'File',
             submenu: [
                 {
@@ -136,7 +131,7 @@ export default class MenuBuilder {
             ],
         };
 
-        const subMenuEdit: DarwinMenuItemConstructorOptions = {
+        const subMenuEdit = {
             label: 'Edit',
             submenu: [
                 {
