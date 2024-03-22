@@ -63,11 +63,16 @@ const installExtensions = async () => {
         .catch(console.log);
 };
 
+type CharacterObject = {
+    name: String,
+    emotes: [String?]
+}
+
 const processAssets = (assetsPath: String) => {
     let emotes = fs.readdirSync(assetsPath + '/sprites', {
         withFileTypes: true,
     });
-    let characterObject = {};
+    let characterObject: {[Name: string] : CharacterObject} = {};
 
     emotes
         .filter((file) => file.isDirectory())
