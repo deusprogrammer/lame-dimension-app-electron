@@ -95,7 +95,7 @@ const component = () => {
                 <tbody>
                     {users.map(({ username, roles }) => {
                         return (
-                            <tr>
+                            <tr key={`user-${username}`}>
                                 <td style={{ fontWeight: 'bolder' }}>
                                     {username}
                                 </td>
@@ -141,8 +141,8 @@ const component = () => {
             </table>
             <h2>Codes</h2>
             <ul>
-                {codes.map(({ code }) => {
-                    return <li>{code}</li>;
+                {codes.map(({ code }, index) => {
+                    return <li key={`code-${index}`}>{code}</li>;
                 })}
             </ul>
             <button

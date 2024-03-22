@@ -44,6 +44,10 @@ const Component = ({ position, dialogue, active }) => {
     const loadTextures = async (character, emote) => {
         let cached = characterCache[`${character}:${emote}`];
 
+        if (!character && !emote) {
+            return;
+        }
+
         // If cached, don't pull again
         if (cached) {
             setHeight(cached.height);

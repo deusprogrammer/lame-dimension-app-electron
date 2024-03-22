@@ -28,6 +28,14 @@ export default class MenuBuilder {
         this.mainWindow.webContents.send('start-save-file');
     }
 
+    newFile = async () => {
+        ipcMain.emit('new-file');
+    }
+
+    reload = async () => {
+        this.mainWindow.reload();
+    }
+
     buildMenu(): Menu {
         if (
             process.env.NODE_ENV === 'development' ||
@@ -98,22 +106,28 @@ export default class MenuBuilder {
         const subMenuFile: DarwinMenuItemConstructorOptions = {
             label: 'File',
             submenu: [
-                { label: 'New', accelerator: 'Command+N', selector: 'new:' },
                 {
+                    label: 'New',
+                    accelerator: 'Command+N',
+                    selector: 'new:',
+                    click: this.newFile,
+                },{
                     label: 'Open',
                     accelerator: 'Command+O',
                     selector: 'open:',
                     click: this.openFile,
-                },
-                {
+                },{
                     label: 'Clone',
                     accelerator: 'Command+Shift+C',
                     selector: 'clone:',
                     enabled: false
-                },
-                { type: 'separator' },
-                { label: 'Save', accelerator: 'Command+S', selector: 'save:', click: this.saveFile },
+                },{ type: 'separator' },
                 {
+                    label: 'Save',
+                    accelerator: 'Command+S',
+                    selector: 'save:',
+                    click: this.saveFile
+                },{
                     label: 'Merge',
                     accelerator: 'Command+M',
                     selector: 'merge:',
@@ -122,7 +136,19 @@ export default class MenuBuilder {
             ],
         };
 
-        return [subMenuAbout, subMenuFile];
+        const subMenuEdit: DarwinMenuItemConstructorOptions = {
+            label: 'Edit',
+            submenu: [
+                {
+                    label: 'Reload',
+                    accelerator: 'Command+R',
+                    selector: 'undo:',
+                    click: this.reload,
+                }
+            ],
+        };
+
+        return [subMenuAbout, subMenuFile, subMenuEdit];
     }
 
     buildDefaultTemplate() {
@@ -130,16 +156,40 @@ export default class MenuBuilder {
             {
                 label: '&File',
                 submenu: [
-                    { label: '&New', accelerator: 'Ctrl+N' },
-                    { label: '&Open', accelerator: 'Ctrl+O', click: this.openFile },
-                    { label: '&Clone', accelerator: 'Ctrl+Shift+C',
-                    enabled: false },
-                    { type: 'separator' },
-                    { label: '&Save', accelerator: 'Ctrl+S', click: this.saveFile },
-                    { label: '&Merge', accelerator: 'Ctrl+M',
-                    enabled: false },
+                    {
+                        label: '&New',
+                        accelerator: 'Ctrl+N',
+                        click: this.newFile
+                    },{
+                        label: '&Open',
+                        accelerator: 'Ctrl+O',
+                        click: this.openFile
+                    },{
+                        label: '&Clone',
+                        accelerator: 'Ctrl+Shift+C',
+                        enabled: false
+                    },{
+                        type: 'separator'
+                    },{
+                        label: '&Save',
+                        accelerator: 'Ctrl+S',
+                        click: this.saveFile
+                    },{
+                        label: '&Merge',
+                        accelerator: 'Ctrl+M',
+                        enabled: false
+                    },
                 ],
-            },
+            },{
+                label: '&Edit',
+                submenu: [
+                    {
+                        label: '&Reload',
+                        accelerator: 'Ctrl+R',
+                        click: this.reload
+                    }
+                ],
+            }
         ];
 
         return templateDefault;

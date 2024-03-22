@@ -54,8 +54,6 @@ const Component = ({
 
     const dialogCount = scene.dialogue.length;
 
-    console.log('PATH: ' + path);
-
     return (
         <>
             <h2>Dialogue</h2>
@@ -77,7 +75,7 @@ const Component = ({
 
                             return (
                                 <tr
-                                    key={`dialogue${dialogueIndex}`}
+                                    key={`dialogue-${dialogueIndex}`}
                                     className={`${
                                         index === dialogueIndex
                                             ? 'selected'

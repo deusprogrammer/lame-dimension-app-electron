@@ -246,7 +246,7 @@ export default () => {
                     </table>
                 </div>
                 <h2>Categories</h2>
-                <div class="scrolling">
+                <div className="scrolling">
                     <table>
                         <tbody>
                             {Object.keys(categories).map((category) => {
@@ -276,7 +276,7 @@ export default () => {
                 {selectedCategory ? (
                     <>
                         <h2>Items</h2>
-                        <div class="scrolling">
+                        <div className="scrolling">
                             <table>
                                 <tbody>
                                     {Object.keys(

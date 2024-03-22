@@ -25,35 +25,31 @@ const component = ({
         }
     }, [selectedChapter]);
 
-    const updateChapterName = (oldChapterName, newChapterName) => {
-        setEditing(null);
-        setEditValue(null);
-        onChapterNameChange(oldChapterName, newChapterName);
-    };
-
     return (
         <div className="chapters">
             <h2>Chapters</h2>
             <div className="scrolling">
                 <table>
                     <tbody>
-                        {Object.keys(chapters).map((chapterName) => (
-                            <EditableInput 
-                                key={chapterName}
-                                currentValue={chapterName}
-                                isChanged={getDiff(`${path}.${chapterName}`, diff)}
-                                isEditable={editable}
-                                isSelected={selectedChapter === chapterName}
-                                onSelect={() => {
-                                    onChapterSelect(chapterName);
-                                }}
-                                onSave={(newChapterName) => {
-                                    updateChapterName(chapterName, newChapterName);
-                                }}
-                                onDelete={() => {
-                                    onChapterRemove(chapterName);
-                                }}
-                            />
+                        {Object.keys(chapters).map((chapterName, index) => (
+                            <React.Fragment key={`chapter-${index}`}>
+                                <EditableInput
+                                    ref={selectedChapter === chapterName ? selectedHook : null}
+                                    currentValue={chapterName}
+                                    isChanged={getDiff(`${path}.${chapterName}`, diff)}
+                                    isEditable={editable}
+                                    isSelected={selectedChapter === chapterName}
+                                    onSelect={() => {
+                                        onChapterSelect(chapterName);
+                                    }}
+                                    onSave={(newChapterName) => {
+                                        onChapterNameChange(chapterName, newChapterName);
+                                    }}
+                                    onDelete={() => {
+                                        onChapterRemove(chapterName);
+                                    }}
+                                />
+                            </React.Fragment>
                         ))}
                     </tbody>
                 </table>

@@ -7,8 +7,7 @@ import {
     faCheck,
 } from '@fortawesome/free-solid-svg-icons';
 
-export default ({
-    key,
+export default React.forwardRef(({
     isSelected,
     isEditable,
     isChanged,
@@ -16,13 +15,13 @@ export default ({
     onSave,
     onDelete,
     onSelect
-}) => {
+}, ref) => {
     const [editedValue, setEditedValue] = useState(currentValue);
     const [isEditing, setIsEditing] = useState(false);
 
     return (
-        <tr 
-            key={key}
+        <tr
+            ref={ref}
             className={
                 isChanged
                     ? 'changed'
@@ -30,7 +29,7 @@ export default ({
             }>
             <td
                 onClick={onSelect}
-                class={`selectable ${
+                className={`selectable ${
                     isSelected
                         ? 'selected'
                         : null
@@ -57,7 +56,7 @@ export default ({
                             className="check-button"
                             onClick={() => {
                                 onSave(editedValue);
-                                setIsEditing(false);  
+                                setIsEditing(false);
                             }}
                         >
                             <FontAwesomeIcon
@@ -112,4 +111,4 @@ export default ({
             ) : null}
         </tr>
     )
-}
+});

@@ -110,8 +110,10 @@ const createWindow = async () => {
 
     mainWindow = new BrowserWindow({
         show: false,
-        width: 1024,
-        height: 728,
+        width: 1920,
+        height: 1080,
+        minWidth: 1920,
+        minHeight: 1080,
         icon: getAssetPath('icon.png'),
         webPreferences: {
             preload: app.isPackaged
@@ -253,8 +255,16 @@ ipcMain.on('open-file', async (event) => {
         return;
     }
 
-    config.currentProject = response.filePaths[0];
     config.previousProjects = config.previousProjects.filter((project: string) => project !== config.currentProject).push(config.currentProject);
+    config.currentProject = response.filePaths[0];
+    writeConfig(config);
+
+    mainWindow?.reload();
+});
+
+ipcMain.on('new-file', async (event) => {
+    config.previousProjects = config.previousProjects.filter((project: string) => project !== config.currentProject).push(config.currentProject);
+    config.currentProject = null;
     writeConfig(config);
 
     mainWindow?.reload();

@@ -8,7 +8,6 @@ import {
     useLocation,
 } from 'react-router-dom';
 
-import ScriptList from './routes/ScriptList';
 import ScriptEditor from './routes/ScriptEditor';
 import Login from './routes/Login';
 import User from './routes/User';

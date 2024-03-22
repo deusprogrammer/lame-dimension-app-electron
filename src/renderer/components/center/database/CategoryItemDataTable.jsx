@@ -69,7 +69,7 @@ export default ({
 
                             if (collection.length === 0) {
                                 return (
-                                    <tbody className="grouped">
+                                    <tbody className="grouped" key={`category-group-${key}`}>
                                         <tr>
                                             <td>{label}</td>
                                             <td></td>
@@ -87,11 +87,11 @@ export default ({
                             }
 
                             return (
-                                <tbody className="grouped">
+                                <tbody className="grouped" key={`table-group-${key}`}>
                                     {collection.map((collectionEntry, index) => {
                                         let translation = entry?.[key]?.[defaultLanguage]?.[index] ?? '';
                                         return (
-                                            <tr>
+                                            <tr key={`category-group-${key}-item${index}`}>
                                                 <td>{`${label} ${
                                                     index + 1
                                                 }`}</td>
@@ -132,7 +132,7 @@ export default ({
                         }
 
                         return (
-                            <tbody>
+                            <tbody key={`category-${key}`}>
                                 <tr>
                                     <td>{label}</td>
                                     <td>

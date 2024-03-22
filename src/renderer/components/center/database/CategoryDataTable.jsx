@@ -15,7 +15,7 @@ export default ({
             localized: false
         });
         copy.template = template;
-        
+
         if (onUpdate) {
             onUpdate(copy);
         }
@@ -25,9 +25,9 @@ export default ({
         let copy = {...category};
         let templateCopy = [ ...category.template ];
         templateCopy[index][fieldName] = fieldValue;
-        
+
         copy.template = templateCopy;
-        
+
         if (onUpdate) {
             onUpdate(copy);
         }
@@ -47,7 +47,7 @@ export default ({
                         <td>
                             <select value={category.nameField}>
                                 { category.template.map(({key}) => (
-                                    <option>{key}</option>
+                                    <option key={`name-field-option-${key}`}>{key}</option>
                                 ))}
                             </select>
                         </td>
@@ -67,7 +67,7 @@ export default ({
                 </thead>
                 <tbody>
                     { category.template.map(({key, label, dataType, localized, collectionType}, index) => (
-                        <tr>
+                        <tr key={`category-template-field-${key}`}>
                             <td><input type='text' onChange={({target: {value}}) => {updateField(index, 'key', value)}} value={key}/></td>
                             <td><input type='text' onChange={({target: {value}}) => {updateField(index, 'label', value)}} value={label}/></td>
                             <td>

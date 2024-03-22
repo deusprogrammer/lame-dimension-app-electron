@@ -22,12 +22,6 @@ const component = ({
         }
     }, [selectedScene]);
 
-    const updateSceneName = (oldSceneName, newSceneName) => {
-        setEditing(null);
-        setEditValue(null);
-        onSceneKeyChange(oldSceneName, newSceneName);
-    };
-
     if (!scenes) {
         return (
             <div className="scenes">
@@ -43,24 +37,26 @@ const component = ({
             <div className="scrolling">
                 <table>
                     <tbody>
-                        {Object.keys(scenes).map((name) => {
+                        {Object.keys(scenes).map((name, index) => {
                             return (
-                                <EditableInput
-                                    key={name}
-                                    currentValue={name}
-                                    isChanged={getDiff(`${path}.${name}`, diff)}
-                                    isEditable={editable}
-                                    isSelected={selectedScene === name}
-                                    onSelect={() => {
-                                        onSelectScene(name);
-                                    }}
-                                    onSave={(newSceneName) => {
-                                        updateSceneName(name, newSceneName);
-                                    }}
-                                    onDelete={() => {
-                                        onSceneRemove(name);
-                                    }}
-                                />
+                                <React.Fragment key={`scene-${index}`}>
+                                    <EditableInput
+                                        ref={selectedScene === name ? selectedHook : null}
+                                        currentValue={name}
+                                        isChanged={getDiff(`${path}.${name}`, diff)}
+                                        isEditable={editable}
+                                        isSelected={selectedScene === name}
+                                        onSelect={() => {
+                                            onSelectScene(name);
+                                        }}
+                                        onSave={(newSceneName) => {
+                                            onSceneKeyChange(name, newSceneName);
+                                        }}
+                                        onDelete={() => {
+                                            onSceneRemove(name);
+                                        }}
+                                    />
+                                </React.Fragment>
                             );
                         })}
                     </tbody>

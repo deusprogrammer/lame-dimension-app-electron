@@ -55,9 +55,13 @@ function App() {
 
     useEffect(() => {
         loadScript();
+    }, []);
+
+    useEffect(() => {
         return window.electron.ipcRenderer.on('start-save-file', () => {
             let chapters = storeScene();
             window.electron.ipcRenderer.sendMessage('save-file', {...script, chapters});
+            toast.info("Project Saved");
         });
     }, [script]);
 
@@ -109,6 +113,19 @@ function App() {
         return copy;
     };
 
+    const changeMapKey = (map, oldMapKey, newMapKey) => {
+        let newMap = {};
+        for (let key in map) {
+            let newKey = key;
+            if (oldMapKey === key) {
+                newKey = newMapKey;
+            }
+            newMap[newKey] = { ...map[key] };
+        }
+
+        return newMap;
+    }
+
     const changeChapterName = async (oldChapterName, newChapterName) => {
         let chaptersCopy = {};
 
@@ -116,15 +133,8 @@ function App() {
             .replace(' ', '_')
             .replace(/[^a-zA-Z0-9_]/, '');
 
-        for (let key in chapters) {
-            let newKey = key;
-            let updated;
-            if (oldChapterName === key) {
-                newKey = newChapterName;
-                updated = Date.now();
-            }
-            chaptersCopy[newKey] = { ...chapters[key], updated };
-        }
+        chaptersCopy = changeMapKey(chapters, oldChapterName, newChapterName);
+
         if (chapter === oldChapterName) {
             setChapter(newChapterName);
         }
@@ -140,20 +150,10 @@ function App() {
             .replace(' ', '_')
             .replace(/[^a-zA-Z0-9_]/g, '');
 
-        for (let key in chapters[chapter].scenes) {
-            let newKey = key;
-            let updated;
-            if (oldSceneKey === key) {
-                newKey = newSceneKey;
-                updated = Date.now();
-            }
-            scenesCopy[newKey] = {
-                ...chapters[chapter].scenes[key],
-                updated,
-            };
-        }
+        scenesCopy = changeMapKey(chapters[chapter].scenes, oldSceneKey, newSceneKey);
 
         chaptersCopy[chapter].scenes = scenesCopy;
+
         if (scene === oldSceneKey) {
             setScene(newSceneKey);
         }
@@ -284,6 +284,9 @@ function App() {
         let copy = update(chapters, {
             [chapter]: { scenes: { [newSceneKey]: { $set: newScene } } },
         });
+
+        console.log("CHAPTERS: " + JSON.stringify(copy, null, 5));
+
         setDialogueIndex(0);
         setScene(newSceneKey);
         setSceneCache(newScene);
