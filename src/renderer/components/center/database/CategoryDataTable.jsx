@@ -31,7 +31,25 @@ export default ({
         if (onUpdate) {
             onUpdate(copy);
         }
-    };
+    }
+
+    const updateTitle = (value) => {
+        let copy = {...category};
+        copy.title[language] = value;
+
+        if (onUpdate) {
+            onUpdate(copy);
+        }
+    }
+
+    const updateNameField = (value) => {
+        let copy = {...category};
+        copy.nameField = value;
+
+        if (onUpdate) {
+            onUpdate(copy);
+        }
+    }
 
     return (
         <>
@@ -39,13 +57,13 @@ export default ({
                 <tbody>
                     <tr>
                         <td>Title</td>
-                        <td><input style={{fontSize: '1.5rem', marginBottom: '10px'}} type="text" value={category.title[language]} /></td>
-                        <td><input style={{fontSize: '1.5rem', marginBottom: '10px'}} type="text" value={category.title[defaultLanguage]} disabled /></td>
+                        <td><input style={{fontSize: '1.5rem', marginBottom: '10px'}} type="text" onChange={({target: {value}}) => {updateTitle(value)}} value={category.title[language]} /></td>
+                        <td><input style={{fontSize: '1.5rem', marginBottom: '10px'}} type="text" value={category.title[defaultLanguage]} disabled readOnly /></td>
                     </tr>
                     <tr>
                         <td>Name Field</td>
                         <td>
-                            <select value={category.nameField}>
+                            <select value={category.nameField} onChange={({target: {value}}) => {updateNameField(value)}}>
                                 { category.template.map(({key}) => (
                                     <option key={`name-field-option-${key}`}>{key}</option>
                                 ))}

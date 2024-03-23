@@ -115,6 +115,7 @@ export default ({
                                                         type={dataType}
                                                         value={localized ? translation : null}
                                                         disabled
+                                                        readOnly={true}
                                                     />
                                                 </td>
                                             </tr>
@@ -159,6 +160,7 @@ export default ({
                                                     : null
                                             }
                                             disabled
+                                            readOnly
                                         />
                                     </td>
                                 </tr>

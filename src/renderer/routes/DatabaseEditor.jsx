@@ -7,6 +7,8 @@ import { useParams } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
 
 import Languages from '../components/left/Languages';
+import Categories from '../components/left/Categories';
+import CategoryData from '../components/left/CategoryData';
 
 import userAtom from '../atoms/User.atom';
 import CategoryItemDataTable from '../components/center/database/CategoryItemDataTable';
@@ -31,12 +33,18 @@ export default () => {
         loadScript();
     }, []);
 
+    useEffect(() => {
+        return window.electron.ipcRenderer.on('start-save-file', () => {
+            let updatedScript = {...script, categoryData, categories};
+            window.electron.ipcRenderer.sendMessage('save-file', updatedScript);
+            setScript(updatedScript);
+            toast.info("Project Saved");
+        });
+    }, [categoryData, categories]);
+
     const loadScript = async () => {
         try {
             const script = await window.electron.ipcRenderer.sendMessage("loadScript");
-
-            console.log(JSON.stringify(script, null, 5));
-
             setCategories(script.categories);
             setCategoryData(script.categoryData);
             setScript(script);
@@ -125,9 +133,7 @@ export default () => {
     const addCategory = () => {
         let categoriesCopy = {...categories};
         categoriesCopy[`_category${Object.keys(categories).length}`] = {
-            title: {
-                en: `_category${Object.keys(categories).length}`
-            },
+            title: createLocalizationBlock(`_category${Object.keys(categories).length}`),
             nameField: 'name',
             template: [
                 {
@@ -245,68 +251,32 @@ export default () => {
                         </tbody>
                     </table>
                 </div>
-                <h2>Categories</h2>
-                <div className="scrolling">
-                    <table>
-                        <tbody>
-                            {Object.keys(categories).map((category) => {
-                                return (
-                                    <EditableInput
-                                        key={`_category-${category}`}
-                                        currentValue={category}
-                                        isEditable={editable}
-                                        isSelected={selectedCategory === category}
-                                        onSelect={() => {
-                                            setSelectedCategory(category);
-                                            setSelectedCategoryItem(null);
-                                        }}
-                                        onSave={(newCategoryKey) => {
-                                            updateCategoryKey(category, newCategoryKey);
-                                        }}
-                                        onDelete={() => {
+                <Categories
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onSelect={(newSelectedCategory) => {
+                        setSelectedCategory(newSelectedCategory);
+                        setSelectedCategoryItem(null);
+                    }}
+                    onCreate={addCategory}
+                    onKeyChange={updateCategoryKey}
+                    onRemove={}
+                    editable={editable}
+                />
 
-                                        }}
-                                    />
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-                <button type="button" onClick={addCategory}>Add Category</button>
                 {selectedCategory ? (
-                    <>
-                        <h2>Items</h2>
-                        <div className="scrolling">
-                            <table>
-                                <tbody>
-                                    {Object.keys(
-                                        categoryData[selectedCategory]
-                                    )
-                                    .filter((key) => key !== '_id')
-                                    .map((key) => {
-                                        return (
-                                            <EditableInput
-                                                key={`_category-item-${key}`}
-                                                currentValue={key}
-                                                isEditable={editable}
-                                                isSelected={selectedCategoryItem === key}
-                                                onSelect={() => {
-                                                    setSelectedCategoryItem(key);
-                                                }}
-                                                onSave={(newCategoryItemKey) => {
-                                                    updateCategoryItemKey(key, newCategoryItemKey);
-                                                }}
-                                                onDelete={() => {
-
-                                                }}
-                                            />
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                        <button type="button" onClick={addCategoryItem} disabled={!selectedCategory}>Add Category Item</button>
-                    </>
+                    <CategoryData
+                        categoryData={categoryData}
+                        selectedCategory={selectedCategory}
+                        selectedCategoryItem={selectedCategoryItem}
+                        onSelect={(newSelectedCategoryItem) => {
+                            setSelectedCategoryItem(newSelectedCategoryItem);
+                        }}
+                        onCreate={addCategoryItem}
+                        onKeyChange={updateCategoryItemKey}
+                        onRemove={}
+                        editable={editable}
+                    />
                 ) : null}
                 <Languages
                     selectedLanguage={language}
