@@ -19,7 +19,7 @@ import fs from 'fs';
 const HOME: string =
     process.platform === 'darwin'
         ? process.env.HOME || '/'
-        : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/DubEditor`;
+        : `${process.env.HOMEDRIVE}${process.env.HOMEPATH}/AppData/Local/ld-editor`;
 const CONFIG_FILE: string = `${HOME}/.ld-editor.conf`;
 
 class AppUpdater {
@@ -198,19 +198,23 @@ app.whenReady()
 
 const writeConfig = (newConfig: any) => {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(newConfig, null, 5));
-}
+};
 
 const readConfig = (): any => {
     if (!fs.existsSync(CONFIG_FILE)) {
-        fs.writeFileSync(CONFIG_FILE, `{
+        fs.mkdirSync(HOME, { recursive: true });
+        fs.writeFileSync(
+            CONFIG_FILE,
+            `{
             "currentProject": "",
             "previousProjects": []
-        }`);
+        }`,
+        );
     }
 
     let configJSON = fs.readFileSync(CONFIG_FILE);
     return JSON.parse(configJSON.toString());
-}
+};
 
 // Global variables
 let config: any = readConfig();
@@ -243,12 +247,20 @@ ipcMain.handle('getSpriteData', (event, character, emote) => {
 });
 
 ipcMain.handle('getScriptName', (event, character, emote) => {
-    return config.currentProject.substring(config.currentProject.lastIndexOf("/") + 1);
+    return config.currentProject.substring(
+        config.currentProject.lastIndexOf('/') + 1,
+    );
 });
 
 ipcMain.handle('save-file', async (event, script) => {
-    fs.copyFileSync(`${config.currentProject}/script.json`, `${config.currentProject}/script.json.bak`);
-    fs.writeFileSync(`${config.currentProject}/script.json`, JSON.stringify(script, null, 5));
+    fs.copyFileSync(
+        `${config.currentProject}/script.json`,
+        `${config.currentProject}/script.json.bak`,
+    );
+    fs.writeFileSync(
+        `${config.currentProject}/script.json`,
+        JSON.stringify(script, null, 5),
+    );
 });
 
 ipcMain.on('open-file', async (event) => {
@@ -260,7 +272,9 @@ ipcMain.on('open-file', async (event) => {
         return;
     }
 
-    config.previousProjects = config.previousProjects.filter((project: string) => project !== config.currentProject).push(config.currentProject);
+    config.previousProjects = config.previousProjects
+        .filter((project: string) => project !== config.currentProject)
+        .push(config.currentProject);
     config.currentProject = response.filePaths[0];
     writeConfig(config);
 
@@ -268,7 +282,9 @@ ipcMain.on('open-file', async (event) => {
 });
 
 ipcMain.on('new-file', async (event) => {
-    config.previousProjects = config.previousProjects.filter((project: string) => project !== config.currentProject).push(config.currentProject);
+    config.previousProjects = config.previousProjects
+        .filter((project: string) => project !== config.currentProject)
+        .push(config.currentProject);
     config.currentProject = null;
     writeConfig(config);
 
