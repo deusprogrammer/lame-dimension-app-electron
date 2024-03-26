@@ -1,0 +1,79 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "chapters": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "scenes": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "smallerPortraits": { "type": "boolean" },
+                      "disablePortraits": { "type": "boolean" },
+                      "keepBlackBars": { "type": "boolean" }
+                    },
+                    "additionalProperties": false
+                  },
+                  "dialogue": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "object",
+                          "properties": {
+                            "en": { "type": "string" },
+                            "es": { "type": "string" },
+                            "jp": { "type": "string" },
+                            "fr": { "type": "string" },
+                            "br": { "type": "string" },
+                            "ch": { "type": "string" }
+                          },
+                          "required": ["en"]
+                        },
+                        "choices": {
+                          "type": "object",
+                          "properties": {
+                            "en": { "type": "array", "items": { "type": "string" } },
+                            "es": { "type": "array", "items": { "type": "string" } },
+                            "jp": { "type": "array", "items": { "type": "string" } },
+                            "fr": { "type": "array", "items": { "type": "string" } },
+                            "br": { "type": "array", "items": { "type": "string" } },
+                            "ch": { "type": "array", "items": { "type": "string" } }
+                          },
+                          "required": ["en"]
+                        },
+                        "notes": { "type": "string" },
+                        "positions": {
+                          "type": "object",
+                          "properties": {
+                            "left": { "type": ["null", "string"] },
+                            "leftFront": { "type": ["null", "string"] },
+                            "rightFront": { "type": ["null", "string"] },
+                            "right": { "type": ["null", "string"] }
+                          },
+                          "additionalProperties": false
+                        },
+                        "active": { "type": "string" }
+                      },
+                      "required": ["text", "choices", "notes", "positions", "active"]
+                    }
+                  }
+                },
+                "required": ["options", "dialogue"]
+              }
+            }
+          },
+          "required": ["scenes"]
+        }
+      }
+    },
+    "required": ["chapters"]
+  }

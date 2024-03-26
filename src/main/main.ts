@@ -216,6 +216,26 @@ const readConfig = (): any => {
     return JSON.parse(configJSON.toString());
 };
 
+const stripNoSqlRemnants = (obj: any): any => {
+    if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map(stripNoSqlRemnants);
+    }
+
+    Object.keys(obj).forEach(key => {
+        if (key === '_id') {
+            delete obj[key];
+        } else {
+            obj[key] = stripNoSqlRemnants(obj[key]);
+        }
+    });
+
+    return obj;
+}
+
 // Global variables
 let config: any = readConfig();
 
@@ -253,6 +273,7 @@ ipcMain.handle('getScriptName', (event, character, emote) => {
 });
 
 ipcMain.handle('save-file', async (event, script) => {
+    script = stripNoSqlRemnants(script);
     fs.copyFileSync(
         `${config.currentProject}/script.json`,
         `${config.currentProject}/script.json.bak`,
