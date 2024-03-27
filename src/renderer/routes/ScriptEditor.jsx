@@ -375,7 +375,7 @@ function App() {
                     onTrigger={() => {
                         toast.info("Dialogue Updated");
                     }}
-                    triggerEvent='save-file'
+                    triggerEvent='cache-save'
                     updateTimeout={1000}
                 >
                     <DialogueEditor
@@ -388,6 +388,7 @@ function App() {
                         diff={diff}
                         path={`chapters.${chapter}.scenes.${scene}.dialogue`}
                         onSceneUpdate={(sceneKey, updated) => {updateScene(sceneKey, updated)}}
+                        onDialogueIndexChange={setDialogueIndex}
                     />
                 </Cacher>
             </div>
