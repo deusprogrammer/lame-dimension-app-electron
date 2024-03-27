@@ -60,7 +60,6 @@ function App() {
 
     useEffect(() => {
         return window.electron.ipcRenderer.on('start-save-file', () => {
-            let chapters = storeScene();
             window.electron.ipcRenderer.sendMessage('save-file', {
                 ...script,
                 chapters,
@@ -90,21 +89,6 @@ function App() {
             console.error(e);
             toast.error('Load Failed');
         }
-    };
-
-    const storeScene = () => {
-        if (!sceneCache) {
-            return chapters;
-        }
-
-        let copy = update(chapters, {
-            [chapter]: {
-                scenes: { [scene]: { $set: sceneCache } },
-            },
-        });
-        setChapters(copy);
-        setScript({ ...script, chapters: copy });
-        return copy;
     };
 
     const changeMapKey = (map, oldMapKey, newMapKey) => {
@@ -159,13 +143,6 @@ function App() {
         setChapters(chaptersCopy);
     };
 
-    const updateOptions = (options) => {
-        let copy = update(sceneCache, {
-            options: { $set: options },
-        });
-        setSceneCache(copy);
-    };
-
     const updateScene = (sceneKey, updated) => {
         let copy = update(chapters, {
             [chapter]: { scenes: { [sceneKey]: { $set: updated } } },
@@ -173,55 +150,18 @@ function App() {
         setChapters(copy);
     };
 
-    const updateDialogue = (index, entry) => {
-        let copy = update(sceneCache, {
-            dialogue: { [index]: { $set: entry } },
+    const updateOptions = (options) => {
+        let copy = update(chapters, {
+            [chapter]: { scenes: { [scene]: { options: { $set: options } } } },
         });
-        setSceneCache(copy);
+        setChapters(copy);
     };
 
-    const addDialogue = (afterIndex) => {
-        let copy = deepCopyObject(sceneCache);
-        let positions = {
-            left: {},
-            leftFront: {},
-            rightFront: {},
-            right: {},
-        };
-        let active = 'left';
-
-        if (afterIndex >= 0) {
-            ({ positions, active } = copy.dialogue[afterIndex]);
-        }
-
-        copy.dialogue.splice(afterIndex + 1, 0, {
-            positions: {
-                left: { ...positions?.left },
-                right: { ...positions?.right },
-                leftFront: { ...positions?.leftFront },
-                rightFront: { ...positions?.rightFront },
-            },
-            text: {
-                en: '',
-                es: '',
-                jp: '',
-                fr: '',
-                br: '',
-                ch: '',
-            },
-            choices: {
-                en: [],
-                es: [],
-                jp: [],
-                fr: [],
-                br: [],
-                ch: [],
-            },
-            active,
-            emote: null,
+    const updateDialogue = (index, entry) => {
+        let copy = update(chapters, {
+            [chapter]: { scenes: { [scene]: { dialogue: { [index]: { $set: entry } } } } },
         });
-        setDialogueIndex(afterIndex + 1);
-        setSceneCache(copy);
+        setChapters(copy);
     };
 
     const addChapter = () => {
@@ -240,13 +180,6 @@ function App() {
         setDialogueIndex(0);
         setChapter(chapterName.toLowerCase());
         setScript({ ...script, chapters: copy });
-    };
-
-    const storeDialogues = (newDialogs) => {
-        let copy = update(sceneCache, {
-            dialogue: { $set: newDialogs },
-        });
-        setSceneCache(copy);
     };
 
     const createScene = () => {
@@ -315,13 +248,6 @@ function App() {
         setChapter(null);
         setChapters(copy);
         setScript({ ...script, chapters: copy });
-    };
-
-    const removeDialogue = (dialogueIndex) => {
-        let copy = update(sceneCache, {
-            dialogue: { $splice: [[dialogueIndex, 1]] },
-        });
-        setSceneCache(copy);
     };
 
     return (
@@ -449,6 +375,7 @@ function App() {
                     onTrigger={() => {
                         toast.info("Dialogue Updated");
                     }}
+                    triggerEvent='save-file'
                     updateTimeout={1000}
                 >
                     <DialogueEditor
@@ -461,11 +388,6 @@ function App() {
                         diff={diff}
                         path={`chapters.${chapter}.scenes.${scene}.dialogue`}
                         onSceneUpdate={(sceneKey, updated) => {updateScene(sceneKey, updated)}}
-                        onDialogueIndexChange={setDialogueIndex}
-                        onDialogueChange={updateDialogue}
-                        onDialogueAdd={addDialogue}
-                        onDialogueRearrange={storeDialogues}
-                        onDialogueRemove={removeDialogue}
                     />
                 </Cacher>
             </div>
