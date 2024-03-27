@@ -22,12 +22,12 @@ let interval;
 export default () => {
     const [selectedCategory, setSelectedCategory] = useState();
     const [selectedCategoryItem, setSelectedCategoryItem] = useState();
+    const [name, setName] = useState();
     const [categories, setCategories] = useState({});
     const [categoryData, setCategoryData] = useState({});
 
     const [language, setLanguage] = useState('en');
     const [defaultLanguage, setDefaultLanguage] = useState('en');
-    const [script, setScript] = useState({});
     const [editable, setEditable] = useState(true);
 
     useEffect(() => {
@@ -36,19 +36,18 @@ export default () => {
 
     useEffect(() => {
         return window.electron.ipcRenderer.on('start-save-file', () => {
-            let updatedScript = {...script, categoryData, categories};
-            window.electron.ipcRenderer.sendMessage('save-file', updatedScript);
-            setScript(updatedScript);
+            let updatedScript = {name, categoryData, categories};
+            window.electron.ipcRenderer.sendMessage('saveDatabase', updatedScript);
             toast.info("Project Saved");
         });
     }, [categoryData, categories]);
 
     const loadScript = async () => {
         try {
-            const script = await window.electron.ipcRenderer.sendMessage("loadScript");
-            setCategories(script.categories);
-            setCategoryData(script.categoryData);
-            setScript(script);
+            const db = await window.electron.ipcRenderer.sendMessage("loadDatabase");
+            setCategories(db.categories);
+            setCategoryData(db.categoryData);
+            setName(db.name);
         } catch (e) {
             console.error(e);
             toast.error('Load Failed');
@@ -203,6 +202,9 @@ export default () => {
                         keyProp: 'mapKey'
                     }
                 }}
+                onTrigger={() => {
+                    toast.info("Categories Updated");
+                }}
                 updateTimeout={1000}
             >
                 <CategoryDataTable
@@ -228,6 +230,9 @@ export default () => {
                         keyProp: 'mapKey'
                     }
                 }}
+                onTrigger={() => {
+                    toast.info("Category Data Updated");
+                }}
                 updateTimeout={1000}
             >
                 <CategoryItemDataTable
@@ -251,25 +256,7 @@ export default () => {
                         <tbody>
                             <tr>
                                 <td>Name</td>
-                                <td>{script.name}</td>
-                            </tr>
-                            <tr>
-                                <td>Editor</td>
-                                <td>{script.editor}</td>
-                            </tr>
-                            <tr>
-                                <td>Mode</td>
-                                <td>
-                                    {editable ? (
-                                        <span style={{ color: 'green' }}>
-                                            Editing
-                                        </span>
-                                    ) : (
-                                        <span style={{ color: 'red' }}>
-                                            Read Only
-                                        </span>
-                                    )}
-                                </td>
+                                <td>{name}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -307,6 +294,23 @@ export default () => {
                     onSelectLanguage={setLanguage}
                     onSelectDefaultLanguage={setDefaultLanguage}
                 />
+                <h2>Actions</h2>
+                <button
+                    onClick={() => {
+                        navigator.clipboard.writeText(
+                            JSON.stringify(
+                                {
+                                    name, categoryData, categories
+                                },
+                                null,
+                                5,
+                            ),
+                        );
+                        toast.info('JSON Payload Copied to Clipboard');
+                    }}
+                >
+                    Dump JSON to Clipboard
+                </button>
             </div>
             <div className="center" style={{ textAlign: 'center' }}>
                 {!selectedCategoryItemComponent ? selectedCategoryComponent : null}

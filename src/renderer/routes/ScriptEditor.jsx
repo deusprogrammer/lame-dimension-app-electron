@@ -60,7 +60,7 @@ function App() {
 
     useEffect(() => {
         return window.electron.ipcRenderer.on('start-save-file', () => {
-            window.electron.ipcRenderer.sendMessage('save-file', {
+            window.electron.ipcRenderer.sendMessage('saveScript', {
                 ...script,
                 chapters,
             });

@@ -266,6 +266,21 @@ ipcMain.handle('loadScript', (event) => {
     return data;
 });
 
+ipcMain.handle('loadDatabase', (event) => {
+    if (!config.currentProject) {
+        return {
+            categories: {},
+            categoryData: {},
+            chapters: [],
+        };
+    }
+    let dbDir = `${config.currentProject}/database.json`;
+    const fileContents = fs.readFileSync(dbDir);
+    let data = JSON.parse(fileContents.toString());
+    data = { ...data };
+    return data;
+});
+
 ipcMain.handle('getSpriteData', (event, character, emote) => {
     if (!config.currentProject) {
         return {};
@@ -282,7 +297,7 @@ ipcMain.handle('getScriptName', (event, character, emote) => {
     );
 });
 
-ipcMain.handle('save-file', async (event, script) => {
+ipcMain.handle('saveScript', async (event, script) => {
     script = stripNoSqlRemnants(script);
     fs.copyFileSync(
         `${config.currentProject}/script.json`,
@@ -291,6 +306,18 @@ ipcMain.handle('save-file', async (event, script) => {
     fs.writeFileSync(
         `${config.currentProject}/script.json`,
         JSON.stringify(script, null, 5),
+    );
+});
+
+ipcMain.handle('saveDatabase', async (event, db) => {
+    db = stripNoSqlRemnants(db);
+    fs.copyFileSync(
+        `${config.currentProject}/database.json`,
+        `${config.currentProject}/database.json.bak`,
+    );
+    fs.writeFileSync(
+        `${config.currentProject}/database.json`,
+        JSON.stringify(db, null, 5),
     );
 });
 
@@ -303,9 +330,6 @@ ipcMain.on('open-file', async (event) => {
         return;
     }
 
-    // config.previousProjects = config.previousProjects
-    //     .filter((project: string) => project !== config.currentProject)
-    //     .push(config.currentProject);
     config.currentProject = response.filePaths[0];
     writeConfig(config);
 
@@ -313,9 +337,6 @@ ipcMain.on('open-file', async (event) => {
 });
 
 ipcMain.on('new-file', async (event) => {
-    // config.previousProjects = config.previousProjects
-    //     .filter((project: string) => project !== config.currentProject)
-    //     .push(config.currentProject);
     config.currentProject = null;
     writeConfig(config);
 
