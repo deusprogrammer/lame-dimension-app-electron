@@ -69,18 +69,6 @@ function App() {
         return JSON.parse(JSON.stringify(object));
     };
 
-    const save = async () => {
-
-    };
-
-    const merge = async () => {
-
-    };
-
-    const pull = async () => {
-
-    };
-
     const loadScript = async () => {
         try {
             const script = await window.electron.ipcRenderer.sendMessage("loadScript");
@@ -167,6 +155,13 @@ function App() {
         });
         setSceneCache(copy);
     };
+
+    const updateScene = (sceneKey, updated) => {
+        let copy = update(chapters, {
+            [chapter]: { scenes: { [sceneKey]: { $set: updated } } },
+        });
+        setChapters(copy);
+    }
 
     const updateDialogue = (index, entry) => {
         let copy = update(sceneCache, {

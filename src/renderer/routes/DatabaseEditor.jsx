@@ -16,6 +16,7 @@ import CategoryDataTable from '../components/center/database/CategoryDataTable';
 
 import EditableInput from '../components/EditableInput';
 import { createLocalizationBlock } from '../data/languages';
+import Cacher from '../components/Cacher';
 
 let interval;
 export default () => {
@@ -124,9 +125,9 @@ export default () => {
         setCategories(categoriesCopy);
     }
 
-    const updateCategoryData = (category, updated) => {
+    const updateCategoryData = (category, categoryItem, updated) => {
         let categoryDataCopy = {...categoryData};
-        categoryDataCopy[category][selectedCategoryItem] = updated;
+        categoryDataCopy[category][categoryItem] = updated;
         setCategoryData(categoryDataCopy);
     }
 
@@ -195,12 +196,23 @@ export default () => {
         let categoryData =
             categories[selectedCategory];
         selectedCategoryComponent = (
-            <CategoryDataTable
-                category={categoryData}
-                defaultLanguage={defaultLanguage}
-                language={language}
-                onUpdate={(updated) => {updateCategoryMetadata(selectedCategory, updated)}}
-            />
+            <Cacher
+                cacheMap={{
+                    category: {
+                        updateFn: 'onUpdate',
+                        keyProp: 'mapKey'
+                    }
+                }}
+                updateTimeout={1000}
+            >
+                <CategoryDataTable
+                    mapKey={selectedCategory}
+                    category={categoryData}
+                    defaultLanguage={defaultLanguage}
+                    language={language}
+                    onUpdate={(category, updated) => {updateCategoryMetadata(category, updated)}}
+                />
+            </Cacher>
         );
     }
 
@@ -209,13 +221,24 @@ export default () => {
         let categoryItemData =
             categoryData[selectedCategory][selectedCategoryItem];
         selectedCategoryItemComponent = (
-            <CategoryItemDataTable
-                category={categories[selectedCategory]}
-                categoryItemData={categoryItemData}
-                defaultLanguage={defaultLanguage}
-                language={language}
-                onUpdate={(updated) => {updateCategoryData(selectedCategory, updated)}}
-            />
+            <Cacher
+                cacheMap={{
+                    categoryItemData: {
+                        updateFn: 'onUpdate',
+                        keyProp: 'mapKey'
+                    }
+                }}
+                updateTimeout={1000}
+            >
+                <CategoryItemDataTable
+                    mapKey={selectedCategoryItem}
+                    category={categories[selectedCategory]}
+                    categoryItemData={categoryItemData}
+                    defaultLanguage={defaultLanguage}
+                    language={language}
+                    onUpdate={(selectedCategoryItem, updated) => {updateCategoryData(selectedCategory, selectedCategoryItem, updated)}}
+                />
+            </Cacher>
         );
     }
 

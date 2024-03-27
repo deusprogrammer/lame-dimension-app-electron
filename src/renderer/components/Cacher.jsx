@@ -4,6 +4,7 @@ export default ({ children, cacheMap, updateTimeout }) => {
     const [cache, setCache] = useState([]);
     const updateInterval = useRef([]);
     const previousCallback = useRef(() => {});
+    const callbacks = useRef([]);
 
     const enterListener = useCallback((evt, cache, index) => {
         if (evt.key === 'Enter') {
@@ -13,16 +14,21 @@ export default ({ children, cacheMap, updateTimeout }) => {
 
     const setupCache = () => {
         let tempCache = [];
+        callbacks.current = [];
         React.Children.forEach(children, (child) => {
             let cacheEntry = {};
+            let callbackMap = {};
             Object.keys(cacheMap).forEach((key) => {
                 let value = child.props[key];
-                let onUpdate = child.props[cacheMap.updateFn];
+                let mapKey = child.props[cacheMap[key].keyProp];
+                callbackMap[key] = child.props[cacheMap[key].updateFn];
+
                 cacheEntry[key] =  {
                     value,
-                    onUpdate
+                    mapKey
                 };
             });
+            callbacks.current.push(callbackMap);
             tempCache.push(cacheEntry);
         });
         setCache(tempCache);
@@ -30,7 +36,7 @@ export default ({ children, cacheMap, updateTimeout }) => {
 
     const updateCache = (index, key, value) => {
         let cacheCopy = [...cache];
-        let cacheEntryCopy = [...cacheCopy[index]];
+        let cacheEntryCopy = {...cacheCopy[index]};
         cacheEntryCopy[key].value = value;
         cacheCopy[index] = cacheEntryCopy;
         setCache(cacheCopy);
@@ -48,6 +54,9 @@ export default ({ children, cacheMap, updateTimeout }) => {
     };
 
     const triggerUpdate = (cache, index) => {
+        removeEventListener('keyup', previousCallback.current);
+        clearTimeout(updateInterval.current[index]);
+
         if (
             cache === undefined ||
             index === undefined ||
@@ -56,14 +65,16 @@ export default ({ children, cacheMap, updateTimeout }) => {
             return;
         }
 
-        removeEventListener('keyup', previousCallback.current);
-        clearTimeout('keyup', updateInterval.current[index]);
-
         let cacheEntry = cache[index];
         Object.keys(cacheEntry).forEach((key) => {
-            let {value, onUpdate} = cacheEntry[key].value;
+            let {value, mapKey} = cacheEntry[key];
+            let onUpdate = callbacks.current[index][key];
 
             if (onUpdate) {
+                if (mapKey) {
+                    onUpdate(mapKey, value);
+                    return;
+                }
                 onUpdate(index, value);
             }
         });
@@ -73,21 +84,15 @@ export default ({ children, cacheMap, updateTimeout }) => {
         addEventListener('keyup', previousCallback.current);
         return () => {
             removeEventListener('keyup', previousCallback.current);
-        };
-    }, []);
-
-    useEffect(() => {
-        console.log('CACHE: ' + JSON.stringify(cache, null, 5));
-    }, [cache]);
-
-    useEffect(() => {
-        setupCache();
-        return () => {
             cache.forEach((cacheEntry, index) => {
                 triggerUpdate(cache, index);
             });
         };
-    }, [children, cacheMap]);
+    }, []);
+
+    useEffect(() => {
+        setupCache();
+    }, [children]);
 
     if (cache.length === 0) {
         return <></>;
