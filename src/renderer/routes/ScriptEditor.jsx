@@ -61,8 +61,11 @@ function App() {
     useEffect(() => {
         return window.electron.ipcRenderer.on('start-save-file', () => {
             let chapters = storeScene();
-            window.electron.ipcRenderer.sendMessage('save-file', {...script, chapters});
-            toast.info("Project Saved");
+            window.electron.ipcRenderer.sendMessage('save-file', {
+                ...script,
+                chapters,
+            });
+            toast.info('Project Saved');
         });
     }, [script]);
 
@@ -72,11 +75,13 @@ function App() {
 
     const loadScript = async () => {
         try {
-            const script = await window.electron.ipcRenderer.sendMessage("loadScript");
-            script.name = await window.electron.ipcRenderer.sendMessage("getScriptName");
+            const script =
+                await window.electron.ipcRenderer.sendMessage('loadScript');
+            script.name =
+                await window.electron.ipcRenderer.sendMessage('getScriptName');
 
             if (!script.name) {
-                script.name = "New Script";
+                script.name = 'New Script';
             }
 
             setChapters(script.chapters);
@@ -113,7 +118,7 @@ function App() {
         }
 
         return newMap;
-    }
+    };
 
     const changeChapterName = async (oldChapterName, newChapterName) => {
         let chaptersCopy = {};
@@ -139,7 +144,11 @@ function App() {
             .replace(' ', '_')
             .replace(/[^a-zA-Z0-9_]/g, '');
 
-        scenesCopy = changeMapKey(chapters[chapter].scenes, oldSceneKey, newSceneKey);
+        scenesCopy = changeMapKey(
+            chapters[chapter].scenes,
+            oldSceneKey,
+            newSceneKey,
+        );
 
         chaptersCopy[chapter].scenes = scenesCopy;
 
@@ -162,7 +171,7 @@ function App() {
             [chapter]: { scenes: { [sceneKey]: { $set: updated } } },
         });
         setChapters(copy);
-    }
+    };
 
     const updateDialogue = (index, entry) => {
         let copy = update(sceneCache, {
@@ -281,7 +290,7 @@ function App() {
             [chapter]: { scenes: { [newSceneKey]: { $set: newScene } } },
         });
 
-        console.log("CHAPTERS: " + JSON.stringify(copy, null, 5));
+        console.log('CHAPTERS: ' + JSON.stringify(copy, null, 5));
 
         setDialogueIndex(0);
         setScene(newSceneKey);
@@ -373,8 +382,8 @@ function App() {
                                     chapters,
                                 },
                                 null,
-                                5
-                            )
+                                5,
+                            ),
                         );
                         toast.info('JSON Payload Copied to Clipboard');
                     }}
