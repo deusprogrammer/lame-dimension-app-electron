@@ -64,15 +64,15 @@ const installExtensions = async () => {
 };
 
 type CharacterObject = {
-    name: String,
-    emotes: [String?]
-}
+    name: String;
+    emotes: [String?];
+};
 
 const processAssets = (assetsPath: String) => {
     let emotes = fs.readdirSync(assetsPath + '/sprites', {
         withFileTypes: true,
     });
-    let characterObject: {[Name: string] : CharacterObject} = {};
+    let characterObject: { [Name: string]: CharacterObject } = {};
 
     emotes
         .filter((file) => file.isDirectory())
@@ -225,7 +225,7 @@ const stripNoSqlRemnants = (obj: any): any => {
         return obj.map(stripNoSqlRemnants);
     }
 
-    Object.keys(obj).forEach(key => {
+    Object.keys(obj).forEach((key) => {
         if (key === '_id') {
             delete obj[key];
         } else {
@@ -234,7 +234,7 @@ const stripNoSqlRemnants = (obj: any): any => {
     });
 
     return obj;
-}
+};
 
 // Global variables
 let config: any = readConfig();
@@ -293,9 +293,9 @@ ipcMain.on('open-file', async (event) => {
         return;
     }
 
-    config.previousProjects = config.previousProjects
-        .filter((project: string) => project !== config.currentProject)
-        .push(config.currentProject);
+    // config.previousProjects = config.previousProjects
+    //     .filter((project: string) => project !== config.currentProject)
+    //     .push(config.currentProject);
     config.currentProject = response.filePaths[0];
     writeConfig(config);
 
@@ -303,9 +303,9 @@ ipcMain.on('open-file', async (event) => {
 });
 
 ipcMain.on('new-file', async (event) => {
-    config.previousProjects = config.previousProjects
-        .filter((project: string) => project !== config.currentProject)
-        .push(config.currentProject);
+    // config.previousProjects = config.previousProjects
+    //     .filter((project: string) => project !== config.currentProject)
+    //     .push(config.currentProject);
     config.currentProject = null;
     writeConfig(config);
 
