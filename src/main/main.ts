@@ -196,6 +196,17 @@ app.whenReady()
     })
     .catch(console.log);
 
+const readYyFile = (yyFile: string) => {
+    const data: Buffer = fs.readFileSync(yyFile);
+
+    // Remove trailing commas with whitespace using regex
+    const cleanedData = data.toString().replace(/,\s*([\]}])/g, '$1');
+
+    // Parsing as JSON
+    const jsonData = JSON.parse(cleanedData);
+    return jsonData;
+}
+
 const writeConfig = (newConfig: any) => {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(newConfig, null, 5));
 };
@@ -262,8 +273,7 @@ ipcMain.handle('getSpriteData', (event, character, emote) => {
     let directory = `${config.currentProject}/assets/sprites/${emote}/spr_${character}${emote}`;
     let spriteFile = `${directory}/spr_${character}${emote}.yy`;
 
-    let spriteDataJson = fs.readFileSync(spriteFile);
-    return JSON.parse(spriteDataJson.toString());
+    return readYyFile(spriteFile);
 });
 
 ipcMain.handle('getScriptName', (event, character, emote) => {
