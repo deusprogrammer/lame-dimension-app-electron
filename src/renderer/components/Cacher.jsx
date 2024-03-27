@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 
-export default ({ children, cacheMap, updateTimeout }) => {
+export default ({ children, cacheMap, updateTimeout, onTrigger }) => {
     const [cache, setCache] = useState([]);
     const updateInterval = useRef([]);
     const previousCallback = useRef(() => {});
@@ -70,12 +70,14 @@ export default ({ children, cacheMap, updateTimeout }) => {
             let {value, mapKey} = cacheEntry[key];
             let onUpdate = callbacks.current[index][key];
 
-            if (onUpdate) {
-                if (mapKey) {
-                    onUpdate(mapKey, value);
-                    return;
-                }
+            if (onUpdate && mapKey) {
+                onUpdate(mapKey, value);
+            } else if (onUpdate && !mapKey) {
                 onUpdate(index, value);
+            }
+
+            if (onTrigger) {
+                onTrigger();
             }
         });
     };

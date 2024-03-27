@@ -22,6 +22,7 @@ import update from 'immutability-helper';
 
 import deepDiff from 'deep-diff-pizza';
 import { mergePulled } from '../util/util';
+import Cacher from '../components/Cacher';
 
 let dialogCounter = 0;
 let interval;
@@ -335,12 +336,8 @@ function App() {
                     diff={diff}
                     path={'chapters'}
                     onChapterSelect={(chapter) => {
-                        if (sceneCache) {
-                            storeScene();
-                        }
                         setChapter(chapter);
                         setScene(null);
-                        setSceneCache(null);
                     }}
                     onChapterCreate={addChapter}
                     onChapterRemove={removeChapter}
@@ -353,12 +350,8 @@ function App() {
                     diff={diff}
                     path={`chapters.${chapter}.scenes`}
                     onSelectScene={(key) => {
-                        if (sceneCache) {
-                            storeScene();
-                        }
                         setScene(key);
                         setDialogueIndex(0);
-                        setSceneCache({ ...chapters[chapter].scenes[key] });
                     }}
                     onCreateScene={createScene}
                     onSceneRemove={removeScene}
@@ -371,13 +364,6 @@ function App() {
                     onSelectDefaultLanguage={setDefaultLanguage}
                 />
                 <h2>Actions</h2>
-                <button onClick={save} disabled={!editable}>
-                    Save
-                </button>
-                {user?.roles?.includes('ADMIN') ? (
-                    <button onClick={merge}>Merge to Root</button>
-                ) : null}
-                <button onClick={pull}>Pull from Root</button>
                 <button
                     onClick={() => {
                         navigator.clipboard.writeText(
@@ -401,7 +387,7 @@ function App() {
                 <div className="preview">
                     <Characters
                         side="left"
-                        scene={sceneCache}
+                        scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                         index={dialogueIndex}
                         characters={script.characters}
                         editable={editable}
@@ -411,20 +397,20 @@ function App() {
                     />
                     <div>
                         <CharacterSprites
-                            scene={sceneCache}
+                            scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                             index={dialogueIndex}
                         />
                         <TextBox
                             language={language}
                             defaultLanguage={defaultLanguage}
-                            scene={sceneCache}
+                            scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                             index={dialogueIndex}
                             characters={script.characters}
                         />
                     </div>
                     <Characters
                         side="right"
-                        scene={sceneCache}
+                        scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                         index={dialogueIndex}
                         characters={script.characters}
                         editable={editable}
@@ -435,7 +421,7 @@ function App() {
                 </div>
                 {scene ? (
                     <Option
-                        options={sceneCache.options}
+                        options={chapters?.[chapter]?.scenes?.[scene]?.options ?? {options: {}}}
                         editable={editable}
                         diff={diff}
                         path={`chapters.${chapter}.scenes.${scene}.options`}
@@ -444,21 +430,35 @@ function App() {
                         }}
                     />
                 ) : null}
-                <DialogueEditor
-                    language={language}
-                    defaultLanguage={defaultLanguage}
-                    scene={sceneCache}
-                    index={dialogueIndex}
-                    sceneKey={scene}
-                    editable={editable}
-                    diff={diff}
-                    path={`chapters.${chapter}.scenes.${scene}.dialogue`}
-                    onDialogueIndexChange={setDialogueIndex}
-                    onDialogueChange={updateDialogue}
-                    onDialogueAdd={addDialogue}
-                    onDialogueRearrange={storeDialogues}
-                    onDialogueRemove={removeDialogue}
-                />
+                <Cacher
+                    cacheMap={{
+                        scene: {
+                            updateFn: 'onSceneUpdate',
+                            keyProp: 'sceneKey'
+                        }
+                    }}
+                    onTrigger={() => {
+                        toast.info("Dialogue Updated");
+                    }}
+                    updateTimeout={1000}
+                >
+                    <DialogueEditor
+                        language={language}
+                        defaultLanguage={defaultLanguage}
+                        scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
+                        index={dialogueIndex}
+                        sceneKey={scene}
+                        editable={editable}
+                        diff={diff}
+                        path={`chapters.${chapter}.scenes.${scene}.dialogue`}
+                        onSceneUpdate={(sceneKey, updated) => {updateScene(sceneKey, updated)}}
+                        onDialogueIndexChange={setDialogueIndex}
+                        onDialogueChange={updateDialogue}
+                        onDialogueAdd={addDialogue}
+                        onDialogueRearrange={storeDialogues}
+                        onDialogueRemove={removeDialogue}
+                    />
+                </Cacher>
             </div>
         </div>
     );
