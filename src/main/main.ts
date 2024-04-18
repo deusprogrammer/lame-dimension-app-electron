@@ -321,6 +321,21 @@ ipcMain.handle('saveDatabase', async (event, db) => {
     );
 });
 
+ipcMain.handle('mergeFile', async (event) => {
+    const response = await dialog.showOpenDialog({
+        title: "Select File to Merge",
+        properties: ['openFile'],
+    });
+
+    if (response.canceled) {
+        return;
+    }
+
+    let mergingStr : string = fs.readFileSync(response.filePaths[0]).toString();
+    let merging = JSON.parse(mergingStr);
+    return merging;
+});
+
 ipcMain.on('open-file', async (event) => {
     const response = await dialog.showOpenDialog({
         properties: ['openDirectory'],

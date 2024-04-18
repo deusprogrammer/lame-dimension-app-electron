@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useAtom } from 'jotai';
 import { toast } from 'react-toastify';
 
 import Chapters from '../components/left/Chapters';
@@ -12,47 +11,30 @@ import Characters from '../components/center/Characters';
 import DialogueEditor from '../components/center/DialogueEditor';
 
 import Option from '../components/center/Options';
-import userAtom from '../atoms/User.atom';
-
-import { useParams } from 'react-router';
-import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 
 import update from 'immutability-helper';
 
-import deepDiff from 'deep-diff-pizza';
-import { mergePulled } from '../util/util';
 import Cacher from '../components/Cacher';
+import {getDiff, merge} from '../util/nina';
 
 let dialogCounter = 0;
-let interval;
 
 function App() {
     const [language, setLanguage] = useState('en');
     const [defaultLanguage, setDefaultLanguage] = useState('en');
 
     const [script, setScript] = useState({});
-    const [rootScript, setRootScript] = useState({});
-
     const [diff, setDiff] = useState([]);
 
     const [chapters, setChapters] = useState({});
     const [chapter, setChapter] = useState('');
 
     const [scene, setScene] = useState(null);
-    const [sceneCache, setSceneCache] = useState(null);
 
     const [dialogueIndex, setDialogueIndex] = useState(0);
 
     const [editable, setEditable] = useState(true);
-
-    const [user] = useAtom(userAtom);
-
-    const { id } = useParams();
-    const [searchParams] = useSearchParams();
-
-    const jwtToken = localStorage.getItem('jwtToken');
-    const as = searchParams.get('as');
+    const [mergeFile, setMergeFile] = useState();
 
     useEffect(() => {
         loadScript();
@@ -67,10 +49,6 @@ function App() {
             toast.info('Project Saved');
         });
     }, [script]);
-
-    const deepCopyObject = (object) => {
-        return JSON.parse(JSON.stringify(object));
-    };
 
     const loadScript = async () => {
         try {
@@ -227,7 +205,6 @@ function App() {
 
         setDialogueIndex(0);
         setScene(newSceneKey);
-        setSceneCache(newScene);
         setChapters(copy);
         setScript({ ...script, chapters: copy });
     };
@@ -237,7 +214,6 @@ function App() {
             [chapter]: { scenes: { $unset: [sceneKey] } },
         });
         setScene(null);
-        setSceneCache(null);
         setChapters(copy);
         setScript({ ...script, chapters: copy });
     };
@@ -249,6 +225,53 @@ function App() {
         setChapters(copy);
         setScript({ ...script, chapters: copy });
     };
+
+    if (mergeFile) {
+        let diff = getDiff(script, mergeFile);
+
+        return (
+            <div>
+                <h1>Merge Report</h1>
+                <table className="merge-table">
+                    <thead>
+                        <tr>
+                            <th>Path</th>
+                            <th>Old</th>
+                            <th></th>
+                            <th>New</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            diff.map(({path, oldValue, newValue}) => (
+                                <tr key={path}>
+                                    <td>{path}</td>
+                                    <td>{oldValue}</td>
+                                    <td>=&gt;</td>
+                                    <td>{newValue}</td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                </table>
+                <div style={{textAlign: "center"}}>
+                    <button onClick={() => {
+                        let updatedScript = merge(script, mergeFile);
+                        setScript(updatedScript);
+                        setChapters(updatedScript.chapters);
+                        setMergeFile(null);
+                    }}>
+                        Accept
+                    </button>
+                    <button onClick={() => {
+                        setMergeFile(null);
+                    }}>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="container">
@@ -315,6 +338,14 @@ function App() {
                     }}
                 >
                     Dump JSON to Clipboard
+                </button>
+                <button
+                    onClick={async () => {
+                        let merge = await window.electron.ipcRenderer.sendMessage('mergeFile');
+                        setMergeFile(merge);
+                    }}
+                >
+                    Merge File
                 </button>
             </div>
             <div className="center" style={{ textAlign: 'center' }}>

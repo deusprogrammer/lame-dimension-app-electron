@@ -303,3 +303,22 @@ button[disabled] {
     border-top: 10px solid black;
     margin-top: 5px;
 }
+
+.merge-table {
+    width: 80%;
+    margin: auto;
+    /* border-spacing: 10px; */
+}
+
+.merge-table td {
+    padding: 0px 10px;
+    text-align: center;
+}
+
+.merge-table tr:nth-child(even) {
+    background-color: black;
+}
+
+.merge-table tr:nth-child(even) {
+    background-color: teal;
+}

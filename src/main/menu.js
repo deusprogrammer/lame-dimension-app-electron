@@ -122,12 +122,7 @@ export default class MenuBuilder {
                     accelerator: 'Command+S',
                     selector: 'save:',
                     click: this.saveFile
-                },{
-                    label: 'Merge',
-                    accelerator: 'Command+M',
-                    selector: 'merge:',
-                    enabled: false
-                },
+                }
             ],
         };
 
@@ -169,11 +164,7 @@ export default class MenuBuilder {
                         label: '&Save',
                         accelerator: 'Ctrl+S',
                         click: this.saveFile
-                    },{
-                        label: '&Merge',
-                        accelerator: 'Ctrl+M',
-                        enabled: false
-                    },
+                    }
                 ],
             },{
                 label: '&Edit',
