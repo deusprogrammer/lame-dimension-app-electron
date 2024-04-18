@@ -323,6 +323,14 @@ function App() {
                 />
                 <h2>Actions</h2>
                 <button
+                    onClick={async () => {
+                        let merge = await window.electron.ipcRenderer.sendMessage('mergeFile');
+                        setMergeFile(merge);
+                    }}
+                >
+                    Merge File
+                </button>
+                <button
                     onClick={() => {
                         navigator.clipboard.writeText(
                             JSON.stringify(
@@ -338,14 +346,6 @@ function App() {
                     }}
                 >
                     Dump JSON to Clipboard
-                </button>
-                <button
-                    onClick={async () => {
-                        let merge = await window.electron.ipcRenderer.sendMessage('mergeFile');
-                        setMergeFile(merge);
-                    }}
-                >
-                    Merge File
                 </button>
             </div>
             <div className="center" style={{ textAlign: 'center' }}>
