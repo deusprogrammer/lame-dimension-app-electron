@@ -48,7 +48,12 @@ export const setValueAtPath = (obj, path, value) => {
                         throw "Path value doesn't match structure of object";
                     }
 
-                    current[key][index] = value;
+                    if (!value) {
+                        current[key].splice(index, 1);
+                    } else {
+                        current[key][index] = value;
+                    }
+
                     return;
                 }
                 current = current[key][index];
@@ -58,7 +63,12 @@ export const setValueAtPath = (obj, path, value) => {
                         throw "Path value doesn't match structure of object";
                     }
 
-                    current[key] = value;
+                    if (!value) {
+                        delete current[key];
+                    } else {
+                        current[key] = value;
+                    }
+
                     return;
                 }
                 current = current[key];
