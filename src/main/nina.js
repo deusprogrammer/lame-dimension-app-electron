@@ -70,17 +70,8 @@ export const setValueAtPath = (obj, path, value) => {
 }
 
 const getAdditions = (obj1, obj2, path = '') => {
-    if (!obj2) {
+    if (!obj1 || !obj2) {
         return null;
-    }
-
-    if (!obj1) {
-        return [{
-            op: "ADDED",
-            path,
-            oldValue: null,
-            newValue: obj2
-        }];
     }
 
     let additions = [];
@@ -98,6 +89,15 @@ const getAdditions = (obj1, obj2, path = '') => {
         let keyStr = !isNaN(key) ? `[${key}]` : sep + key;
         let newPath = path + `${keyStr}`;
 
+        if (!(key in obj1)) {
+            additions.push({
+                op: "ADDED",
+                path: newPath,
+                oldValue: null,
+                newValue: obj2[key]
+            });
+        }
+
         let addition = getAdditions(obj1[key], obj2[key], newPath);
         if (addition) {
             additions = [...additions, ...addition];
@@ -109,17 +109,8 @@ const getAdditions = (obj1, obj2, path = '') => {
 
 // Path: foo[0].key1, bar.key1.subKey1[0], bar.key2
 const getChangesAndRemovals = (obj1, obj2, path = '') => {
-    if (!obj1) {
+    if (!obj1 || !obj2) {
         return null;
-    }
-
-    if (!obj2) {
-        return [{
-            op: "REMOVED",
-            path,
-            oldValue: obj1,
-            newValue: null
-        }];
     }
 
     let diffs = [];
@@ -147,6 +138,16 @@ const getChangesAndRemovals = (obj1, obj2, path = '') => {
         let keyStr = !isNaN(key) ? `[${key}]` : sep + key;
         let newPath = path + `${keyStr}`;
 
+        if (!(key in obj2)) {
+            diffs.push({
+                op: "REMOVED",
+                path: newPath,
+                oldValue: obj1[key],
+                newValue: null
+            });
+            break;
+        }
+
         let diff = getChangesAndRemovals(obj1[key], obj2[key], newPath);
         if (diff) {
             diffs = [...diffs, ...diff];
@@ -156,13 +157,11 @@ const getChangesAndRemovals = (obj1, obj2, path = '') => {
     return diffs;
 }
 
-export const getDiff = (obj1, obj2, exclude = null) => {
+export const getDiff = (obj1, obj2) => {
     let changesAndRemovals = getChangesAndRemovals(obj1, obj2);
     let additions = getAdditions(obj1, obj2);
 
-    let diff = [...changesAndRemovals, ...additions];
-
-    return diff.filter(({path}) => exclude && !exclude.includes(path));
+    return [...changesAndRemovals, ...additions];
 }
 
 export const mergeFiles = (obj1, obj2) => {

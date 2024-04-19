@@ -15,7 +15,7 @@ import Option from '../components/center/Options';
 import update from 'immutability-helper';
 
 import Cacher from '../components/Cacher';
-import {getDiff, merge} from '../util/nina';
+import { getDiff, mergeDiff } from '../util/nina';
 
 let dialogCounter = 0;
 
@@ -24,7 +24,6 @@ function App() {
     const [defaultLanguage, setDefaultLanguage] = useState('en');
 
     const [script, setScript] = useState({});
-    const [diff, setDiff] = useState([]);
 
     const [chapters, setChapters] = useState({});
     const [chapter, setChapter] = useState('');
@@ -34,7 +33,7 @@ function App() {
     const [dialogueIndex, setDialogueIndex] = useState(0);
 
     const [editable, setEditable] = useState(true);
-    const [mergeFile, setMergeFile] = useState();
+    const [mDiff, setMDiff] = useState();
 
     useEffect(() => {
         loadScript();
@@ -201,8 +200,6 @@ function App() {
             [chapter]: { scenes: { [newSceneKey]: { $set: newScene } } },
         });
 
-        console.log('CHAPTERS: ' + JSON.stringify(copy, null, 5));
-
         setDialogueIndex(0);
         setScene(newSceneKey);
         setChapters(copy);
@@ -226,15 +223,29 @@ function App() {
         setScript({ ...script, chapters: copy });
     };
 
-    if (mergeFile) {
-        let diff = getDiff(script, mergeFile);
+    const getString = (obj, op) => {
+        if (op === "REMOVED") {
+            return "";
+        }
 
+        if (typeof obj === "object") {
+            return JSON.stringify(obj, null, 5);
+        } else if (typeof obj === "boolean") {
+            return obj ? "true" : "false";
+        } else {
+            return obj;
+        }
+    }
+
+    if (mDiff) {
         return (
             <div>
                 <h1>Merge Report</h1>
                 <table className="merge-table">
                     <thead>
                         <tr>
+                            <th></th>
+                            <th>Op</th>
                             <th>Path</th>
                             <th>Old</th>
                             <th></th>
@@ -243,12 +254,22 @@ function App() {
                     </thead>
                     <tbody>
                         {
-                            diff.map(({path, oldValue, newValue}) => (
+                            mDiff.sort(({op: op1}, {op: op2}) => {
+                                    if (op1 < op2) {
+                                        return 1;
+                                    } else if (op1 > op2) {
+                                        return -1;
+                                    } else {
+                                        return 0;
+                                    }
+                                }).map(({op, path, oldValue, newValue}, index) => (
                                 <tr key={path}>
+                                    <td>{index + 1}</td>
+                                    <td>{op}</td>
                                     <td>{path}</td>
-                                    <td>{oldValue}</td>
+                                    <td style={{textAlign: "left"}}><pre>{getString(oldValue, op)}</pre></td>
                                     <td>=&gt;</td>
-                                    <td>{newValue}</td>
+                                    <td style={{textAlign: "left"}}><pre>{getString(newValue)}</pre></td>
                                 </tr>
                             ))
                         }
@@ -256,15 +277,15 @@ function App() {
                 </table>
                 <div style={{textAlign: "center"}}>
                     <button onClick={() => {
-                        let updatedScript = merge(script, mergeFile);
+                        let updatedScript = mergeDiff(script, mDiff);
                         setScript(updatedScript);
                         setChapters(updatedScript.chapters);
-                        setMergeFile(null);
+                        setMDiff(null);
                     }}>
                         Accept
                     </button>
                     <button onClick={() => {
-                        setMergeFile(null);
+                        setMDiff(null);
                     }}>
                         Cancel
                     </button>
@@ -291,7 +312,7 @@ function App() {
                     selectedChapter={chapter}
                     chapters={chapters}
                     editable={editable}
-                    diff={diff}
+                    diff={[]}
                     path={'chapters'}
                     onChapterSelect={(chapter) => {
                         setChapter(chapter);
@@ -305,7 +326,7 @@ function App() {
                     scenes={chapters[chapter]?.scenes}
                     selectedScene={scene}
                     editable={editable}
-                    diff={diff}
+                    diff={[]}
                     path={`chapters.${chapter}.scenes`}
                     onSelectScene={(key) => {
                         setScene(key);
@@ -324,8 +345,8 @@ function App() {
                 <h2>Actions</h2>
                 <button
                     onClick={async () => {
-                        let merge = await window.electron.ipcRenderer.sendMessage('mergeFile');
-                        setMergeFile(merge);
+                        let d = await window.electron.ipcRenderer.sendMessage('mergeFile');
+                        setMDiff(getDiff(script, d, ["name"]));
                     }}
                 >
                     Merge File
@@ -357,7 +378,7 @@ function App() {
                         index={dialogueIndex}
                         characters={script.characters}
                         editable={editable}
-                        diff={diff}
+                        diff={[]}
                         path={`chapters.${chapter}.scenes.${scene}.dialogue[${dialogueIndex}].positions`}
                         onPositionChange={updateDialogue}
                     />
@@ -380,7 +401,7 @@ function App() {
                         index={dialogueIndex}
                         characters={script.characters}
                         editable={editable}
-                        diff={diff}
+                        diff={[]}
                         path={`chapters.${chapter}.scenes.${scene}.dialogue[${dialogueIndex}].positions`}
                         onPositionChange={updateDialogue}
                     />
@@ -389,7 +410,7 @@ function App() {
                     <Option
                         options={chapters?.[chapter]?.scenes?.[scene]?.options ?? {options: {}}}
                         editable={editable}
-                        diff={diff}
+                        diff={[]}
                         path={`chapters.${chapter}.scenes.${scene}.options`}
                         onOptionsChange={(options) => {
                             updateOptions(options);
@@ -416,7 +437,7 @@ function App() {
                         index={dialogueIndex}
                         sceneKey={scene}
                         editable={editable}
-                        diff={diff}
+                        diff={[]}
                         path={`chapters.${chapter}.scenes.${scene}.dialogue`}
                         onSceneUpdate={(sceneKey, updated) => {updateScene(sceneKey, updated)}}
                         onDialogueIndexChange={setDialogueIndex}
