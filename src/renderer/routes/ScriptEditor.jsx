@@ -41,6 +41,7 @@ function App() {
 
     useEffect(() => {
         return window.electron.ipcRenderer.on('start-save-file', () => {
+            console.log("CHAPTERS: " + JSON.stringify(chapters, null, 5));
             window.electron.ipcRenderer.sendMessage('saveScript', {
                 ...script,
                 chapters,
@@ -149,7 +150,7 @@ function App() {
         let copy = { ...chapters };
         copy[chapterName.toLocaleLowerCase()] = {
             name: chapterName,
-            scenes: [],
+            scenes: {},
             updated: Date.now(),
         };
         setChapters(copy);
@@ -162,13 +163,13 @@ function App() {
     const createScene = () => {
         let newSceneKey = `scene${dialogCounter++}`;
         let newScene = {
+            options: {
+                smallerPortraits: false,
+                disablePortraits: false,
+                keepBlackBars: false,
+            },
             dialogue: [
                 {
-                    options: {
-                        smallerPortraits: false,
-                        disablePortraits: false,
-                        keepBlackBars: false,
-                    },
                     positions: {
                         left: {},
                         leftFront: {},
@@ -353,6 +354,8 @@ function App() {
                 </button>
                 <button
                     onClick={() => {
+                        console.log("CHAPTERS: " + JSON.stringify(chapters, null, 5));
+
                         navigator.clipboard.writeText(
                             JSON.stringify(
                                 {
