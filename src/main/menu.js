@@ -117,12 +117,12 @@ export default class MenuBuilder {
                     selector: 'clone:',
                     enabled: false
                 },{ type: 'separator' },
-                {
-                    label: 'Save',
-                    accelerator: 'Command+S',
-                    selector: 'save:',
-                    click: this.saveFile
-                }
+                // {
+                //     label: 'Save',
+                //     accelerator: 'Command+S',
+                //     selector: 'save:',
+                //     click: this.saveFile
+                // }
             ],
         };
 
@@ -160,11 +160,12 @@ export default class MenuBuilder {
                         enabled: false
                     },{
                         type: 'separator'
-                    },{
-                        label: '&Save',
-                        accelerator: 'Ctrl+S',
-                        click: this.saveFile
                     }
+                    // ,{
+                    //     label: '&Save',
+                    //     accelerator: 'Ctrl+S',
+                    //     click: this.saveFile
+                    // }
                 ],
             },{
                 label: '&Edit',

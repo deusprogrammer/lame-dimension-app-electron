@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 
 import Chapters from '../components/left/Chapters';
@@ -40,8 +40,7 @@ function App() {
     }, []);
 
     useEffect(() => {
-        return window.electron.ipcRenderer.on('start-save-file', () => {
-            console.log("CHAPTERS: " + JSON.stringify(chapters, null, 5));
+        window.electron.ipcRenderer.on('start-save-file', () => {
             window.electron.ipcRenderer.sendMessage('saveScript', {
                 ...script,
                 chapters,
@@ -125,6 +124,7 @@ function App() {
         let copy = update(chapters, {
             [chapter]: { scenes: { [sceneKey]: { $set: updated } } },
         });
+        setScript({ ...script, chapters: copy });
         setChapters(copy);
     };
 
@@ -132,6 +132,7 @@ function App() {
         let copy = update(chapters, {
             [chapter]: { scenes: { [scene]: { options: { $set: options } } } },
         });
+        setScript({ ...script, chapters: copy });
         setChapters(copy);
     };
 
@@ -139,6 +140,7 @@ function App() {
         let copy = update(chapters, {
             [chapter]: { scenes: { [scene]: { dialogue: { [index]: { $set: entry } } } } },
         });
+        setScript({ ...script, chapters: copy });
         setChapters(copy);
     };
 
@@ -344,18 +346,17 @@ function App() {
                     onSelectDefaultLanguage={setDefaultLanguage}
                 />
                 <h2>Actions</h2>
-                <button
-                    onClick={async () => {
-                        let d = await window.electron.ipcRenderer.sendMessage('mergeFile');
-                        setMDiff(getDiff(script, d, ["name"]));
-                    }}
-                >
-                    Merge File
+                <button onClick={() => {
+                    window.electron.ipcRenderer.sendMessage('saveScript', {
+                        ...script,
+                        chapters,
+                    });
+                    toast.info('Project Saved');
+                }}>
+                    Save
                 </button>
                 <button
                     onClick={() => {
-                        console.log("CHAPTERS: " + JSON.stringify(chapters, null, 5));
-
                         navigator.clipboard.writeText(
                             JSON.stringify(
                                 {

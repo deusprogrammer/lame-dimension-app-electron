@@ -295,6 +295,13 @@ export default () => {
                     onSelectDefaultLanguage={setDefaultLanguage}
                 />
                 <h2>Actions</h2>
+                <button onClick={() => {
+                    let updatedScript = {name, categoryData, categories};
+                    window.electron.ipcRenderer.sendMessage('saveDatabase', updatedScript);
+                    toast.info("Project Saved");
+                }}>
+                    Save
+                </button>
                 <button
                     onClick={() => {
                         navigator.clipboard.writeText(
