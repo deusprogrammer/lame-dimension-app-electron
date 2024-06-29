@@ -183,6 +183,7 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
+    "extends": null,
     "productName": "ElectronReact",
     "appId": "org.erb.ElectronReact",
     "asar": true,
