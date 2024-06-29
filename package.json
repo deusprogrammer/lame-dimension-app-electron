@@ -11,7 +11,7 @@
     "hot",
     "reload"
   ],
-  "homepage": "https://github.com/deusprogrammer/lame-dimension-app-electron/electron-react-boilerplate#readme",
+  "homepage": ".",
   "bugs": {
     "url": "https://github.com/deusprogrammer/lame-dimension-app-electron/issues"
   },
@@ -21,9 +21,9 @@
   },
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "name": "Michael C. Main",
+    "email": "deusprogrammer@gmail.com",
+    "url": "https://lamedimension.com"
   },
   "contributors": [
     {
@@ -184,8 +184,8 @@
   },
   "build": {
     "extends": null,
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "Lame Dimension Script Editor",
+    "appId": "org.erb.ld",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [

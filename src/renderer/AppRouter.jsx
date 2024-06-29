@@ -71,7 +71,7 @@ function App() {
                     <button
                         onClick={() => {
                             navigate(
-                                `/editor/scripts`
+                                `/editor/script`
                             );
                         }}
                     >
@@ -80,7 +80,7 @@ function App() {
                     <button
                         onClick={() => {
                             navigate(
-                                `/editor/scripts`
+                                `/editor/script`
                             );
                         }}
                     >
