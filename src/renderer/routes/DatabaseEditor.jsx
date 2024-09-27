@@ -118,8 +118,33 @@ export default () => {
         setCategoryData(categoryDataCopy);
     }
 
+    const restructureLocalizedData = (category, field, isLocalized) => {
+        let categoryDataCopy = {...categoryData };
+        for (let key in categoryDataCopy[category]) {
+            if (isLocalized && typeof categoryDataCopy[category][key][field] === 'string') {
+                let parsed = "";
+                try {
+                    parsed = JSON.parse(categoryDataCopy[category][key][field]);
+                } catch (e) {
+                    parsed = createLocalizationBlock(categoryDataCopy[category][key][field]);
+                }
+                categoryDataCopy[category][key][field] = parsed;
+            } else if (!isLocalized && typeof categoryDataCopy[category][key][field] !== 'string') {
+                categoryDataCopy[category][key][field] = JSON.stringify(categoryDataCopy[category][key][field]);
+            }
+        }
+    }
+
     const updateCategoryMetadata = (category, updated) => {
+        console.log("CATEGORY: " + category);
+        console.log("UPDATED: " + updated);
+
         let categoriesCopy = {...categories};
+
+        updated.template.forEach(({localized, key}) => {
+            restructureLocalizedData(category, key, localized);
+        });
+
         categoriesCopy[category] = updated;
         setCategories(categoriesCopy);
     }
@@ -162,7 +187,7 @@ export default () => {
                 newItem[key] = createLocalizationBlock(() => new Array());
                 return;
             } else if (localized && dataType === 'text') {
-                newItem[key] = createLocalizationBlock('')
+                newItem[key] = createLocalizationBlock('');
                 return;
             }
 
@@ -270,7 +295,7 @@ export default () => {
                     }}
                     onCreate={addCategory}
                     onKeyChange={updateCategoryKey}
-                    onRemove={}
+                    onRemove={()=>{}}
                     editable={editable}
                 />
 
@@ -284,7 +309,7 @@ export default () => {
                         }}
                         onCreate={addCategoryItem}
                         onKeyChange={updateCategoryItemKey}
-                        onRemove={}
+                        onRemove={()=>{}}
                         editable={editable}
                     />
                 ) : null}

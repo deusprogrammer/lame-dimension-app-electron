@@ -79,7 +79,6 @@ export default ({
                         <th>Label</th>
                         <th>Collection Type</th>
                         <th>Type</th>
-                        <th>Default</th>
                         <th>Localized</th>
                     </tr>
                 </thead>
