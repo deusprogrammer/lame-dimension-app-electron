@@ -208,6 +208,7 @@ const readYyFile = (yyFile: string) => {
 }
 
 const writeConfig = (newConfig: any) => {
+    console.log("CONFIG FILE: " + CONFIG_FILE);
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(newConfig, null, 5));
 };
 
@@ -346,6 +347,7 @@ ipcMain.on('open-file', async (event) => {
     }
 
     config.currentProject = response.filePaths[0];
+    console.log("CURRENT PROJECT: " + config.currentProject);
     writeConfig(config);
 
     mainWindow?.reload();

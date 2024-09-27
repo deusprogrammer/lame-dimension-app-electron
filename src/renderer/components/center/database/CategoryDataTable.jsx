@@ -23,7 +23,7 @@ export default ({
 
     const updateField = (index, fieldName, fieldValue) => {
         let copy = {...category};
-        let templateCopy = [ ...category.template ];
+        let templateCopy = [ ...copy.template ];
         templateCopy[index][fieldName] = fieldValue;
 
         copy.template = templateCopy;
@@ -84,7 +84,7 @@ export default ({
                 </thead>
                 <tbody>
                     { category.template.map(({key, label, dataType, localized, collectionType}, index) => (
-                        <tr key={`category-template-field-${key}`}>
+                        <tr key={`category-template-field-${index}`}>
                             <td><input type='text' onChange={({target: {value}}) => {updateField(index, 'key', value)}} value={key}/></td>
                             <td><input type='text' onChange={({target: {value}}) => {updateField(index, 'label', value)}} value={label}/></td>
                             <td>
