@@ -131,6 +131,8 @@ export default () => {
                 categoryDataCopy[category][key][field] = parsed;
             } else if (!isLocalized && typeof categoryDataCopy[category][key][field] !== 'string') {
                 categoryDataCopy[category][key][field] = JSON.stringify(categoryDataCopy[category][key][field]);
+            } else if (isLocalized && !categoryDataCopy[category][key][field]) {
+                categoryDataCopy[category][key][field] = createLocalizationBlock();
             }
         }
     }
