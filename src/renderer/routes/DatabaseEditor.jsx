@@ -135,6 +135,38 @@ export default () => {
                 categoryDataCopy[category][key][field] = createLocalizationBlock();
             }
         }
+
+        setCategoryData(categoryDataCopy);
+    }
+
+    const renameChangedFields = (category, updatedCategory) => {
+        let categoryDataCopy = {...categoryData };
+        let keyChanges = [];
+        let oldCategory = structuredClone(categories[category]);
+
+        // Collect key changes
+        for (let index in oldCategory.template) {
+            let oldKey = oldCategory.template[index].key;
+            let newKey = updatedCategory.template[index].key;
+            if (oldKey !== updatedCategory.template[index].key) {
+                keyChanges.push([oldKey, newKey]);
+            }
+        };
+
+        // Go through key changes and rename keys deleting the old key
+        for (let [oldKey, newKey] of keyChanges) {
+            for (let itemKey in categoryDataCopy[category]) {
+                let item = categoryDataCopy[category][itemKey];
+                for (let key in item) {
+                    if (key === oldKey) {
+                        categoryDataCopy[category][itemKey][newKey] = categoryDataCopy[category][itemKey][oldKey];
+                        delete categoryDataCopy[category][itemKey][oldKey];
+                    }
+                }
+            }
+        }
+
+        setCategoryData(categoryDataCopy);
     }
 
     const updateCategoryMetadata = (category, updated) => {
@@ -146,6 +178,8 @@ export default () => {
         updated.template.forEach(({localized, key}) => {
             restructureLocalizedData(category, key, localized);
         });
+
+        renameChangedFields(category, updated);
 
         categoriesCopy[category] = updated;
         setCategories(categoriesCopy);

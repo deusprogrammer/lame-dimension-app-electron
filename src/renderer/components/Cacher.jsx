@@ -28,7 +28,7 @@ export default ({ children, cacheMap, updateTimeout, updateOnKeyPress, onTrigger
             let cacheEntry = {};
             let callbackMap = {};
             Object.keys(cacheMap).forEach((key) => {
-                let value = child.props[key];
+                let value = structuredClone(child.props[key]);
                 let mapKey = child.props[cacheMap[key].keyProp];
                 callbackMap[key] = child.props[cacheMap[key].updateFn];
 
