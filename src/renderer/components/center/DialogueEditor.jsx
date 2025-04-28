@@ -142,6 +142,7 @@ const Component = ({
                                         onDialogueIndexChange(dialogueIndex);
                                     }}
                                 >
+                                    <td style={{fontWeight: 500, color: 'white', padding: '0px 10px'}}>{dialogueIndex}</td>
                                     <td>
                                         {dialogueIndex > 0 ? (
                                             <>
