@@ -22,7 +22,9 @@ const component = ({
         }
     }, [selectedScene]);
 
-    if (!scenes) {
+    console.log("SCENES: " + scenes);
+
+    if (!scenes && scenes !== {}) {
         return (
             <div className="scenes">
                 <h2>Scenes</h2>

@@ -22,12 +22,12 @@ let interval;
 export default () => {
     const [selectedCategory, setSelectedCategory] = useState();
     const [selectedCategoryItem, setSelectedCategoryItem] = useState();
+    const [name, setName] = useState();
     const [categories, setCategories] = useState({});
     const [categoryData, setCategoryData] = useState({});
 
     const [language, setLanguage] = useState('en');
     const [defaultLanguage, setDefaultLanguage] = useState('en');
-    const [script, setScript] = useState({});
     const [editable, setEditable] = useState(true);
 
     useEffect(() => {
@@ -36,19 +36,18 @@ export default () => {
 
     useEffect(() => {
         return window.electron.ipcRenderer.on('start-save-file', () => {
-            let updatedScript = {...script, categoryData, categories};
-            window.electron.ipcRenderer.sendMessage('save-file', updatedScript);
-            setScript(updatedScript);
+            let updatedScript = {name, categoryData, categories};
+            window.electron.ipcRenderer.sendMessage('saveDatabase', updatedScript);
             toast.info("Project Saved");
         });
     }, [categoryData, categories]);
 
     const loadScript = async () => {
         try {
-            const script = await window.electron.ipcRenderer.sendMessage("loadScript");
-            setCategories(script.categories);
-            setCategoryData(script.categoryData);
-            setScript(script);
+            const db = await window.electron.ipcRenderer.sendMessage("loadDatabase");
+            setCategories(db.categories);
+            setCategoryData(db.categoryData);
+            setName(db.name);
         } catch (e) {
             console.error(e);
             toast.error('Load Failed');
@@ -119,8 +118,69 @@ export default () => {
         setCategoryData(categoryDataCopy);
     }
 
+    const restructureLocalizedData = (category, field, isLocalized) => {
+        let categoryDataCopy = {...categoryData };
+        for (let key in categoryDataCopy[category]) {
+            if (isLocalized && typeof categoryDataCopy[category][key][field] === 'string') {
+                let parsed = "";
+                try {
+                    parsed = JSON.parse(categoryDataCopy[category][key][field]);
+                } catch (e) {
+                    parsed = createLocalizationBlock(categoryDataCopy[category][key][field]);
+                }
+                categoryDataCopy[category][key][field] = parsed;
+            } else if (!isLocalized && typeof categoryDataCopy[category][key][field] !== 'string') {
+                categoryDataCopy[category][key][field] = JSON.stringify(categoryDataCopy[category][key][field]);
+            } else if (isLocalized && !categoryDataCopy[category][key][field]) {
+                categoryDataCopy[category][key][field] = createLocalizationBlock('');
+            }
+        }
+
+        setCategoryData(categoryDataCopy);
+    }
+
+    const renameChangedFields = (category, updatedCategory) => {
+        let categoryDataCopy = {...categoryData };
+        let keyChanges = [];
+        let oldCategory = structuredClone(categories[category]);
+
+        // Collect key changes
+        for (let index in oldCategory.template) {
+            let oldKey = oldCategory.template[index].key;
+            let newKey = updatedCategory.template[index].key;
+            if (oldKey !== updatedCategory.template[index].key) {
+                keyChanges.push([oldKey, newKey]);
+            }
+        };
+
+        // Go through key changes and rename keys deleting the old key
+        for (let [oldKey, newKey] of keyChanges) {
+            for (let itemKey in categoryDataCopy[category]) {
+                let item = categoryDataCopy[category][itemKey];
+                for (let key in item) {
+                    if (key === oldKey) {
+                        categoryDataCopy[category][itemKey][newKey] = categoryDataCopy[category][itemKey][oldKey];
+                        delete categoryDataCopy[category][itemKey][oldKey];
+                    }
+                }
+            }
+        }
+
+        setCategoryData(categoryDataCopy);
+    }
+
     const updateCategoryMetadata = (category, updated) => {
+        console.log("CATEGORY: " + category);
+        console.log("UPDATED: " + updated);
+
         let categoriesCopy = {...categories};
+
+        updated.template.forEach(({localized, key}) => {
+            restructureLocalizedData(category, key, localized);
+        });
+
+        renameChangedFields(category, updated);
+
         categoriesCopy[category] = updated;
         setCategories(categoriesCopy);
     }
@@ -163,7 +223,7 @@ export default () => {
                 newItem[key] = createLocalizationBlock(() => new Array());
                 return;
             } else if (localized && dataType === 'text') {
-                newItem[key] = createLocalizationBlock('')
+                newItem[key] = createLocalizationBlock('');
                 return;
             }
 
@@ -203,6 +263,9 @@ export default () => {
                         keyProp: 'mapKey'
                     }
                 }}
+                onTrigger={() => {
+                    toast.info("Categories Updated");
+                }}
                 updateTimeout={1000}
             >
                 <CategoryDataTable
@@ -228,6 +291,9 @@ export default () => {
                         keyProp: 'mapKey'
                     }
                 }}
+                onTrigger={() => {
+                    toast.info("Category Data Updated");
+                }}
                 updateTimeout={1000}
             >
                 <CategoryItemDataTable
@@ -251,25 +317,7 @@ export default () => {
                         <tbody>
                             <tr>
                                 <td>Name</td>
-                                <td>{script.name}</td>
-                            </tr>
-                            <tr>
-                                <td>Editor</td>
-                                <td>{script.editor}</td>
-                            </tr>
-                            <tr>
-                                <td>Mode</td>
-                                <td>
-                                    {editable ? (
-                                        <span style={{ color: 'green' }}>
-                                            Editing
-                                        </span>
-                                    ) : (
-                                        <span style={{ color: 'red' }}>
-                                            Read Only
-                                        </span>
-                                    )}
-                                </td>
+                                <td>{name}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -283,7 +331,7 @@ export default () => {
                     }}
                     onCreate={addCategory}
                     onKeyChange={updateCategoryKey}
-                    onRemove={}
+                    onRemove={()=>{}}
                     editable={editable}
                 />
 
@@ -297,7 +345,7 @@ export default () => {
                         }}
                         onCreate={addCategoryItem}
                         onKeyChange={updateCategoryItemKey}
-                        onRemove={}
+                        onRemove={()=>{}}
                         editable={editable}
                     />
                 ) : null}
@@ -307,6 +355,30 @@ export default () => {
                     onSelectLanguage={setLanguage}
                     onSelectDefaultLanguage={setDefaultLanguage}
                 />
+                <h2>Actions</h2>
+                <button onClick={() => {
+                    let updatedScript = {name, categoryData, categories};
+                    window.electron.ipcRenderer.sendMessage('saveDatabase', updatedScript);
+                    toast.info("Project Saved");
+                }}>
+                    Save
+                </button>
+                <button
+                    onClick={() => {
+                        navigator.clipboard.writeText(
+                            JSON.stringify(
+                                {
+                                    name, categoryData, categories
+                                },
+                                null,
+                                5,
+                            ),
+                        );
+                        toast.info('JSON Payload Copied to Clipboard');
+                    }}
+                >
+                    Dump JSON to Clipboard
+                </button>
             </div>
             <div className="center" style={{ textAlign: 'center' }}>
                 {!selectedCategoryItemComponent ? selectedCategoryComponent : null}

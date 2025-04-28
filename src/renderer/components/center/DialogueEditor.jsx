@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import update from 'immutability-helper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowUp,
@@ -10,46 +11,102 @@ import { getDiff } from '../../util/util';
 
 const Component = ({
     scene,
+    sceneKey,
     language,
     defaultLanguage,
     index,
     editable,
     diff,
     path,
+    onSceneUpdate,
     onDialogueIndexChange,
-    onDialogueChange,
-    onDialogueAdd,
-    onDialogueRemove,
-    onDialogueRearrange,
 }) => {
     if (!scene?.dialogue) {
         return <></>;
     }
 
     const updateDialogueText = (index, language, value) => {
-        let entry = { ...scene.dialogue[index] };
+        let sceneCopy = { ...scene };
+        let entry = { ...sceneCopy.dialogue[index] };
         entry.text[language] = value;
-        onDialogueChange(index, entry);
+        sceneCopy.dialogue[index] = entry;
+        onSceneUpdate(sceneCopy);
     };
 
     const updateDialogueChoices = (index, language, value) => {
-        let entry = { ...scene.dialogue[index] };
+        let sceneCopy = { ...scene };
+        let entry = { ...sceneCopy.dialogue[index] };
         entry.choices[language] = value;
-        onDialogueChange(index, entry);
+        sceneCopy.dialogue[index] = entry;
+        onSceneUpdate(sceneCopy);
     };
 
     const updateDialogue = (field, index, value) => {
-        let entry = { ...scene.dialogue[index] };
+        let sceneCopy = { ...scene };
+        let entry = { ...sceneCopy.dialogue[index] };
         entry[field] = value;
-        onDialogueChange(index, entry);
+        sceneCopy.dialogue[index] = entry;
+        onSceneUpdate(sceneCopy);
     };
 
     const swapDialogues = (index, otherIndex) => {
-        let copy = [...scene.dialogue];
-        let temp = { ...copy[index] };
-        copy[index] = copy[otherIndex];
-        copy[otherIndex] = temp;
-        onDialogueRearrange(copy);
+        let sceneCopy = {...scene};
+        let dialogueCopy = [...sceneCopy.dialogue];
+        let temp = { ...dialogueCopy[index] };
+        dialogueCopy[index] = dialogueCopy[otherIndex];
+        dialogueCopy[otherIndex] = temp;
+        sceneCopy.dialogue = dialogueCopy;
+        onSceneUpdate(sceneCopy);
+    };
+
+    const addDialogue = (afterIndex) => {
+        let sceneCopy = {...scene};
+        let positions = {
+            left: {},
+            leftFront: {},
+            rightFront: {},
+            right: {},
+        };
+        let active = 'left';
+
+        if (afterIndex >= 0) {
+            ({ positions, active } = sceneCopy.dialogue[afterIndex]);
+        }
+
+        sceneCopy.dialogue.splice(afterIndex + 1, 0, {
+            positions: {
+                left: { ...positions?.left },
+                right: { ...positions?.right },
+                leftFront: { ...positions?.leftFront },
+                rightFront: { ...positions?.rightFront },
+            },
+            text: {
+                en: '',
+                es: '',
+                jp: '',
+                fr: '',
+                br: '',
+                ch: '',
+            },
+            choices: {
+                en: [],
+                es: [],
+                jp: [],
+                fr: [],
+                br: [],
+                ch: [],
+            },
+            active,
+            emote: null,
+        });
+        onSceneUpdate(sceneCopy);
+    };
+
+    const removeDialogue = (dialogueIndex) => {
+        let sceneCopy = update(scene, {
+            dialogue: { $splice: [[dialogueIndex, 1]] },
+        });
+        onSceneUpdate(sceneCopy);
     };
 
     const dialogCount = scene.dialogue.length;
@@ -268,7 +325,7 @@ const Component = ({
                                                 dialogCount * 5
                                             }
                                             onClick={(e) => {
-                                                onDialogueAdd(dialogueIndex);
+                                                addDialogue(dialogueIndex);
                                                 e.stopPropagation();
                                                 e.preventDefault();
                                             }}
@@ -283,7 +340,7 @@ const Component = ({
                                                 dialogCount * 5
                                             }
                                             onClick={(e) => {
-                                                onDialogueRemove(dialogueIndex);
+                                                removeDialogue(dialogueIndex);
                                                 onDialogueIndexChange(
                                                     Math.max(
                                                         0,

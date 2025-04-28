@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useAtom } from 'jotai';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 
 import Chapters from '../components/left/Chapters';
@@ -12,65 +11,43 @@ import Characters from '../components/center/Characters';
 import DialogueEditor from '../components/center/DialogueEditor';
 
 import Option from '../components/center/Options';
-import userAtom from '../atoms/User.atom';
-
-import { useParams } from 'react-router';
-import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 
 import update from 'immutability-helper';
 
-import deepDiff from 'deep-diff-pizza';
-import { mergePulled } from '../util/util';
+import Cacher from '../components/Cacher';
+import { getDiff, mergeDiff } from '../util/nina';
 
 let dialogCounter = 0;
-let interval;
 
 function App() {
     const [language, setLanguage] = useState('en');
     const [defaultLanguage, setDefaultLanguage] = useState('en');
 
     const [script, setScript] = useState({});
-    const [rootScript, setRootScript] = useState({});
-
-    const [diff, setDiff] = useState([]);
 
     const [chapters, setChapters] = useState({});
     const [chapter, setChapter] = useState('');
 
     const [scene, setScene] = useState(null);
-    const [sceneCache, setSceneCache] = useState(null);
 
     const [dialogueIndex, setDialogueIndex] = useState(0);
 
     const [editable, setEditable] = useState(true);
-
-    const [user] = useAtom(userAtom);
-
-    const { id } = useParams();
-    const [searchParams] = useSearchParams();
-
-    const jwtToken = localStorage.getItem('jwtToken');
-    const as = searchParams.get('as');
+    const [mDiff, setMDiff] = useState();
 
     useEffect(() => {
         loadScript();
     }, []);
 
     useEffect(() => {
-        return window.electron.ipcRenderer.on('start-save-file', () => {
-            let chapters = storeScene();
-            window.electron.ipcRenderer.sendMessage('save-file', {
+        window.electron.ipcRenderer.on('start-save-file', () => {
+            window.electron.ipcRenderer.sendMessage('saveScript', {
                 ...script,
                 chapters,
             });
             toast.info('Project Saved');
         });
     }, [script]);
-
-    const deepCopyObject = (object) => {
-        return JSON.parse(JSON.stringify(object));
-    };
 
     const loadScript = async () => {
         try {
@@ -89,21 +66,6 @@ function App() {
             console.error(e);
             toast.error('Load Failed');
         }
-    };
-
-    const storeScene = () => {
-        if (!sceneCache) {
-            return chapters;
-        }
-
-        let copy = update(chapters, {
-            [chapter]: {
-                scenes: { [scene]: { $set: sceneCache } },
-            },
-        });
-        setChapters(copy);
-        setScript({ ...script, chapters: copy });
-        return copy;
     };
 
     const changeMapKey = (map, oldMapKey, newMapKey) => {
@@ -158,69 +120,28 @@ function App() {
         setChapters(chaptersCopy);
     };
 
-    const updateOptions = (options) => {
-        let copy = update(sceneCache, {
-            options: { $set: options },
-        });
-        setSceneCache(copy);
-    };
-
     const updateScene = (sceneKey, updated) => {
         let copy = update(chapters, {
             [chapter]: { scenes: { [sceneKey]: { $set: updated } } },
         });
+        setScript({ ...script, chapters: copy });
+        setChapters(copy);
+    };
+
+    const updateOptions = (options) => {
+        let copy = update(chapters, {
+            [chapter]: { scenes: { [scene]: { options: { $set: options } } } },
+        });
+        setScript({ ...script, chapters: copy });
         setChapters(copy);
     };
 
     const updateDialogue = (index, entry) => {
-        let copy = update(sceneCache, {
-            dialogue: { [index]: { $set: entry } },
+        let copy = update(chapters, {
+            [chapter]: { scenes: { [scene]: { dialogue: { [index]: { $set: entry } } } } },
         });
-        setSceneCache(copy);
-    };
-
-    const addDialogue = (afterIndex) => {
-        let copy = deepCopyObject(sceneCache);
-        let positions = {
-            left: {},
-            leftFront: {},
-            rightFront: {},
-            right: {},
-        };
-        let active = 'left';
-
-        if (afterIndex >= 0) {
-            ({ positions, active } = copy.dialogue[afterIndex]);
-        }
-
-        copy.dialogue.splice(afterIndex + 1, 0, {
-            positions: {
-                left: { ...positions?.left },
-                right: { ...positions?.right },
-                leftFront: { ...positions?.leftFront },
-                rightFront: { ...positions?.rightFront },
-            },
-            text: {
-                en: '',
-                es: '',
-                jp: '',
-                fr: '',
-                br: '',
-                ch: '',
-            },
-            choices: {
-                en: [],
-                es: [],
-                jp: [],
-                fr: [],
-                br: [],
-                ch: [],
-            },
-            active,
-            emote: null,
-        });
-        setDialogueIndex(afterIndex + 1);
-        setSceneCache(copy);
+        setScript({ ...script, chapters: copy });
+        setChapters(copy);
     };
 
     const addChapter = () => {
@@ -231,7 +152,7 @@ function App() {
         let copy = { ...chapters };
         copy[chapterName.toLocaleLowerCase()] = {
             name: chapterName,
-            scenes: [],
+            scenes: {},
             updated: Date.now(),
         };
         setChapters(copy);
@@ -241,23 +162,16 @@ function App() {
         setScript({ ...script, chapters: copy });
     };
 
-    const storeDialogues = (newDialogs) => {
-        let copy = update(sceneCache, {
-            dialogue: { $set: newDialogs },
-        });
-        setSceneCache(copy);
-    };
-
     const createScene = () => {
         let newSceneKey = `scene${dialogCounter++}`;
         let newScene = {
+            options: {
+                smallerPortraits: false,
+                disablePortraits: false,
+                keepBlackBars: false,
+            },
             dialogue: [
                 {
-                    options: {
-                        smallerPortraits: false,
-                        disablePortraits: false,
-                        keepBlackBars: false,
-                    },
                     positions: {
                         left: {},
                         leftFront: {},
@@ -289,11 +203,8 @@ function App() {
             [chapter]: { scenes: { [newSceneKey]: { $set: newScene } } },
         });
 
-        console.log('CHAPTERS: ' + JSON.stringify(copy, null, 5));
-
         setDialogueIndex(0);
         setScene(newSceneKey);
-        setSceneCache(newScene);
         setChapters(copy);
         setScript({ ...script, chapters: copy });
     };
@@ -303,7 +214,6 @@ function App() {
             [chapter]: { scenes: { $unset: [sceneKey] } },
         });
         setScene(null);
-        setSceneCache(null);
         setChapters(copy);
         setScript({ ...script, chapters: copy });
     };
@@ -316,12 +226,76 @@ function App() {
         setScript({ ...script, chapters: copy });
     };
 
-    const removeDialogue = (dialogueIndex) => {
-        let copy = update(sceneCache, {
-            dialogue: { $splice: [[dialogueIndex, 1]] },
-        });
-        setSceneCache(copy);
-    };
+    const getString = (obj, op) => {
+        if (op === "REMOVED") {
+            return "";
+        }
+
+        if (typeof obj === "object") {
+            return JSON.stringify(obj, null, 5);
+        } else if (typeof obj === "boolean") {
+            return obj ? "true" : "false";
+        } else {
+            return obj;
+        }
+    }
+
+    if (mDiff) {
+        return (
+            <div>
+                <h1>Merge Report</h1>
+                <table className="merge-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Op</th>
+                            <th>Path</th>
+                            <th>Old</th>
+                            <th></th>
+                            <th>New</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            mDiff.sort(({op: op1}, {op: op2}) => {
+                                    if (op1 < op2) {
+                                        return 1;
+                                    } else if (op1 > op2) {
+                                        return -1;
+                                    } else {
+                                        return 0;
+                                    }
+                                }).map(({op, path, oldValue, newValue}, index) => (
+                                <tr key={path}>
+                                    <td>{index + 1}</td>
+                                    <td>{op}</td>
+                                    <td>{path}</td>
+                                    <td style={{textAlign: "left"}}><pre>{getString(oldValue, op)}</pre></td>
+                                    <td>=&gt;</td>
+                                    <td style={{textAlign: "left"}}><pre>{getString(newValue)}</pre></td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                </table>
+                <div style={{textAlign: "center"}}>
+                    <button onClick={() => {
+                        let updatedScript = mergeDiff(script, mDiff);
+                        setScript(updatedScript);
+                        setChapters(updatedScript.chapters);
+                        setMDiff(null);
+                    }}>
+                        Accept
+                    </button>
+                    <button onClick={() => {
+                        setMDiff(null);
+                    }}>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="container">
@@ -341,15 +315,11 @@ function App() {
                     selectedChapter={chapter}
                     chapters={chapters}
                     editable={editable}
-                    diff={diff}
+                    diff={[]}
                     path={'chapters'}
                     onChapterSelect={(chapter) => {
-                        if (sceneCache) {
-                            storeScene();
-                        }
                         setChapter(chapter);
                         setScene(null);
-                        setSceneCache(null);
                     }}
                     onChapterCreate={addChapter}
                     onChapterRemove={removeChapter}
@@ -359,15 +329,11 @@ function App() {
                     scenes={chapters[chapter]?.scenes}
                     selectedScene={scene}
                     editable={editable}
-                    diff={diff}
+                    diff={[]}
                     path={`chapters.${chapter}.scenes`}
                     onSelectScene={(key) => {
-                        if (sceneCache) {
-                            storeScene();
-                        }
                         setScene(key);
                         setDialogueIndex(0);
-                        setSceneCache({ ...chapters[chapter].scenes[key] });
                     }}
                     onCreateScene={createScene}
                     onSceneRemove={removeScene}
@@ -380,6 +346,15 @@ function App() {
                     onSelectDefaultLanguage={setDefaultLanguage}
                 />
                 <h2>Actions</h2>
+                <button onClick={() => {
+                    window.electron.ipcRenderer.sendMessage('saveScript', {
+                        ...script,
+                        chapters,
+                    });
+                    toast.info('Project Saved');
+                }}>
+                    Save
+                </button>
                 <button
                     onClick={() => {
                         navigator.clipboard.writeText(
@@ -403,64 +378,75 @@ function App() {
                 <div className="preview">
                     <Characters
                         side="left"
-                        scene={sceneCache}
+                        scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                         index={dialogueIndex}
                         characters={script.characters}
                         editable={editable}
-                        diff={diff}
+                        diff={[]}
                         path={`chapters.${chapter}.scenes.${scene}.dialogue[${dialogueIndex}].positions`}
                         onPositionChange={updateDialogue}
                     />
                     <div>
                         <CharacterSprites
-                            scene={sceneCache}
+                            scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                             index={dialogueIndex}
                         />
                         <TextBox
                             language={language}
                             defaultLanguage={defaultLanguage}
-                            scene={sceneCache}
+                            scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                             index={dialogueIndex}
                             characters={script.characters}
                         />
                     </div>
                     <Characters
                         side="right"
-                        scene={sceneCache}
+                        scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                         index={dialogueIndex}
                         characters={script.characters}
                         editable={editable}
-                        diff={diff}
+                        diff={[]}
                         path={`chapters.${chapter}.scenes.${scene}.dialogue[${dialogueIndex}].positions`}
                         onPositionChange={updateDialogue}
                     />
                 </div>
                 {scene ? (
                     <Option
-                        options={sceneCache.options}
+                        options={chapters?.[chapter]?.scenes?.[scene]?.options ?? {options: {}}}
                         editable={editable}
-                        diff={diff}
+                        diff={[]}
                         path={`chapters.${chapter}.scenes.${scene}.options`}
                         onOptionsChange={(options) => {
                             updateOptions(options);
                         }}
                     />
                 ) : null}
-                <DialogueEditor
-                    language={language}
-                    defaultLanguage={defaultLanguage}
-                    scene={sceneCache}
-                    index={dialogueIndex}
-                    sceneKey={scene}
-                    editable={editable}
-                    diff={diff}
-                    path={`chapters.${chapter}.scenes.${scene}.dialogue`}
-                    onDialogueIndexChange={setDialogueIndex}
-                    onDialogueChange={updateDialogue}
-                    onDialogueAdd={addDialogue}
-                    onDialogueRearrange={storeDialogues}
-                    onDialogueRemove={removeDialogue}
-                />
+                <Cacher
+                    cacheMap={{
+                        scene: {
+                            updateFn: 'onSceneUpdate',
+                            keyProp: 'sceneKey'
+                        }
+                    }}
+                    onTrigger={() => {
+                        toast.info("Dialogue Updated");
+                    }}
+                    triggerEvent='cache-save'
+                    updateTimeout={1000}
+                >
+                    <DialogueEditor
+                        language={language}
+                        defaultLanguage={defaultLanguage}
+                        scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
+                        index={dialogueIndex}
+                        sceneKey={scene}
+                        editable={editable}
+                        diff={[]}
+                        path={`chapters.${chapter}.scenes.${scene}.dialogue`}
+                        onSceneUpdate={(sceneKey, updated) => {updateScene(sceneKey, updated)}}
+                        onDialogueIndexChange={setDialogueIndex}
+                    />
+                </Cacher>
             </div>
         </div>
     );

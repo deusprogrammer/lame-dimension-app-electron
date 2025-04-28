@@ -196,7 +196,19 @@ app.whenReady()
     })
     .catch(console.log);
 
+const readYyFile = (yyFile: string) => {
+    const data: Buffer = fs.readFileSync(yyFile);
+
+    // Remove trailing commas with whitespace using regex
+    const cleanedData = data.toString().replace(/,\s*([\]}])/g, '$1');
+
+    // Parsing as JSON
+    const jsonData = JSON.parse(cleanedData);
+    return jsonData;
+}
+
 const writeConfig = (newConfig: any) => {
+    console.log("CONFIG FILE: " + CONFIG_FILE);
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(newConfig, null, 5));
 };
 
@@ -255,6 +267,21 @@ ipcMain.handle('loadScript', (event) => {
     return data;
 });
 
+ipcMain.handle('loadDatabase', (event) => {
+    if (!config.currentProject) {
+        return {
+            categories: {},
+            categoryData: {},
+            chapters: [],
+        };
+    }
+    let dbDir = `${config.currentProject}/database.json`;
+    const fileContents = fs.readFileSync(dbDir);
+    let data = JSON.parse(fileContents.toString());
+    data = { ...data };
+    return data;
+});
+
 ipcMain.handle('getSpriteData', (event, character, emote) => {
     if (!config.currentProject) {
         return {};
@@ -262,8 +289,7 @@ ipcMain.handle('getSpriteData', (event, character, emote) => {
     let directory = `${config.currentProject}/assets/sprites/${emote}/spr_${character}${emote}`;
     let spriteFile = `${directory}/spr_${character}${emote}.yy`;
 
-    let spriteDataJson = fs.readFileSync(spriteFile);
-    return JSON.parse(spriteDataJson.toString());
+    return readYyFile(spriteFile);
 });
 
 ipcMain.handle('getScriptName', (event, character, emote) => {
@@ -272,7 +298,7 @@ ipcMain.handle('getScriptName', (event, character, emote) => {
     );
 });
 
-ipcMain.handle('save-file', async (event, script) => {
+ipcMain.handle('saveScript', async (event, script) => {
     script = stripNoSqlRemnants(script);
     fs.copyFileSync(
         `${config.currentProject}/script.json`,
@@ -284,6 +310,33 @@ ipcMain.handle('save-file', async (event, script) => {
     );
 });
 
+ipcMain.handle('saveDatabase', async (event, db) => {
+    db = stripNoSqlRemnants(db);
+    fs.copyFileSync(
+        `${config.currentProject}/database.json`,
+        `${config.currentProject}/database.json.bak`,
+    );
+    fs.writeFileSync(
+        `${config.currentProject}/database.json`,
+        JSON.stringify(db, null, 5),
+    );
+});
+
+ipcMain.handle('mergeFile', async (event) => {
+    const response = await dialog.showOpenDialog({
+        title: "Select File to Merge",
+        properties: ['openFile'],
+    });
+
+    if (response.canceled) {
+        return;
+    }
+
+    let mergingStr : string = fs.readFileSync(response.filePaths[0]).toString();
+    let merging = JSON.parse(mergingStr);
+    return merging;
+});
+
 ipcMain.on('open-file', async (event) => {
     const response = await dialog.showOpenDialog({
         properties: ['openDirectory'],
@@ -293,19 +346,14 @@ ipcMain.on('open-file', async (event) => {
         return;
     }
 
-    // config.previousProjects = config.previousProjects
-    //     .filter((project: string) => project !== config.currentProject)
-    //     .push(config.currentProject);
     config.currentProject = response.filePaths[0];
+    console.log("CURRENT PROJECT: " + config.currentProject);
     writeConfig(config);
 
     mainWindow?.reload();
 });
 
 ipcMain.on('new-file', async (event) => {
-    // config.previousProjects = config.previousProjects
-    //     .filter((project: string) => project !== config.currentProject)
-    //     .push(config.currentProject);
     config.currentProject = null;
     writeConfig(config);
 
