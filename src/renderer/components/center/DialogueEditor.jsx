@@ -6,6 +6,7 @@ import {
     faArrowDown,
     faTrashCan,
     faPlus,
+    faExclamation,
 } from '@fortawesome/free-solid-svg-icons';
 import { getDiff } from '../../util/util';
 
@@ -98,6 +99,7 @@ const Component = ({
             },
             active,
             emote: null,
+            attentionNeeded: false,
         });
         onSceneUpdate(sceneCopy);
     };
@@ -138,6 +140,9 @@ const Component = ({
                                             ? 'selected'
                                             : null
                                     }`}
+                                    style={{
+                                        backgroundColor: entry.attentionNeeded ? '#ff444440' : undefined
+                                    }}
                                     onClick={() => {
                                         onDialogueIndexChange(dialogueIndex);
                                     }}
@@ -356,6 +361,32 @@ const Component = ({
                                             <FontAwesomeIcon
                                                 icon={faTrashCan}
                                             />
+                                        </button>
+                                        <br />
+                                        <button
+                                            tabIndex={
+                                                dialogueIndex +
+                                                1 +
+                                                dialogCount * 6
+                                            }
+                                            onClick={(e) => {
+                                                updateDialogue(
+                                                    'attentionNeeded',
+                                                    dialogueIndex,
+                                                    !entry.attentionNeeded
+                                                );
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
+                                            disabled={!editable}
+                                            title="Notice me senpai -w-"
+                                            style={{
+                                                backgroundColor: entry.attentionNeeded ? '#ff4444' : '#666',
+                                                color: 'white',
+                                                fontWeight: 'bold'
+                                            }}
+                                        >
+                                            <FontAwesomeIcon icon={faExclamation} />
                                         </button>
                                     </td>
                                 </tr>

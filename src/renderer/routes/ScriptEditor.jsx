@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
 
 import Chapters from '../components/left/Chapters';
@@ -34,6 +34,58 @@ function App() {
 
     const [editable, setEditable] = useState(true);
     const [mDiff, setMDiff] = useState();
+
+    // Memoize attention needed checks to ensure they update with chapters state
+    const chaptersNeedingAttention = useMemo(() => {
+        console.log('Recalculating chaptersNeedingAttention...');
+        const map = {};
+        for (let chapterName in chapters) {
+            const chapterData = chapters[chapterName];
+            let needsAttention = false;
+
+            if (chapterData?.scenes) {
+                for (let sceneKey in chapterData.scenes) {
+                    const scene = chapterData.scenes[sceneKey];
+                    if (scene?.dialogue) {
+                        for (let dialogue of scene.dialogue) {
+                            if (dialogue.attentionNeeded) {
+                                needsAttention = true;
+                                console.log(`Chapter "${chapterName}" needs attention (found in scene "${sceneKey}")`, dialogue);
+                                break;
+                            }
+                        }
+                    }
+                    if (needsAttention) break;
+                }
+            }
+            map[chapterName] = needsAttention;
+        }
+        console.log('Chapters needing attention:', map);
+        return map;
+    }, [chapters]);
+
+    const scenesNeedingAttention = useMemo(() => {
+        const map = {};
+        if (chapter && chapters?.[chapter]?.scenes) {
+            for (let sceneKey in chapters[chapter].scenes) {
+                const scene = chapters[chapter].scenes[sceneKey];
+                let needsAttention = false;
+
+                if (scene?.dialogue) {
+                    for (let dialogue of scene.dialogue) {
+                        if (dialogue.attentionNeeded) {
+                            needsAttention = true;
+                            console.log(`Scene "${sceneKey}" needs attention`);
+                            break;
+                        }
+                    }
+                }
+                map[sceneKey] = needsAttention;
+            }
+        }
+        console.log('Scenes needing attention:', map);
+        return map;
+    }, [chapters, chapter]);
 
     useEffect(() => {
         loadScript();
@@ -324,6 +376,7 @@ function App() {
                     onChapterCreate={addChapter}
                     onChapterRemove={removeChapter}
                     onChapterNameChange={changeChapterName}
+                    chaptersNeedingAttention={chaptersNeedingAttention}
                 />
                 <Scenes
                     scenes={chapters[chapter]?.scenes}
@@ -338,6 +391,7 @@ function App() {
                     onCreateScene={createScene}
                     onSceneRemove={removeScene}
                     onSceneKeyChange={changeSceneKey}
+                    scenesNeedingAttention={scenesNeedingAttention}
                 />
                 <Languages
                     selectedLanguage={language}
@@ -354,6 +408,54 @@ function App() {
                     toast.info('Project Saved');
                 }}>
                     Save
+                </button>
+                <button
+                    onClick={() => {
+                        window.electron.ipcRenderer.sendMessage('openProjectDirectory');
+                    }}
+                >
+                    Open Script Directory
+                </button>
+                <button
+                    onClick={() => {
+                        // Load the database to clean it up
+                        window.electron.ipcRenderer.sendMessage('loadDatabase');
+                        window.electron.ipcRenderer.once('loadDatabase', (db) => {
+                            let {categoryData, categories} = db;
+                            let categoryDataCopy = {...categoryData};
+                            let cleaned = false;
+
+                            // For each category
+                            for (let categoryKey in categories) {
+                                let template = categories[categoryKey].template;
+                                let validKeys = new Set(template.map(field => field.key));
+
+                                // For each item in that category
+                                if (categoryDataCopy[categoryKey]) {
+                                    for (let itemKey in categoryDataCopy[categoryKey]) {
+                                        let item = categoryDataCopy[categoryKey][itemKey];
+
+                                        // Remove any fields that aren't in the template
+                                        for (let fieldKey in item) {
+                                            if (!validKeys.has(fieldKey) && fieldKey !== 'id' && fieldKey !== '_id') {
+                                                delete categoryDataCopy[categoryKey][itemKey][fieldKey];
+                                                cleaned = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (cleaned) {
+                                window.electron.ipcRenderer.sendMessage('saveDatabase', {...db, categoryData: categoryDataCopy});
+                                toast.success('Database cleaned up and saved successfully');
+                            } else {
+                                toast.info('No cleanup needed');
+                            }
+                        });
+                    }}
+                >
+                    Clean Up and Save
                 </button>
                 <button
                     onClick={() => {

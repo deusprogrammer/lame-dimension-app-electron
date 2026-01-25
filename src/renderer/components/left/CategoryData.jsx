@@ -50,7 +50,7 @@ const component = ({
                                             onKeyChange(key, newCategoryItemKey);
                                         }}
                                         onDelete={() => {
-
+                                            onRemove(key);
                                         }}
                                     />
                                 </React.Fragment>

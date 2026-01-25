@@ -12,6 +12,7 @@ export default React.forwardRef(({
     isEditable,
     isChanged,
     currentValue,
+    needsAttention,
     onSave,
     onDelete,
     onSelect
@@ -26,7 +27,11 @@ export default React.forwardRef(({
                 isChanged
                     ? 'changed'
                     : null
-            }>
+            }
+            style={{
+                backgroundColor: needsAttention ? '#ff444440' : undefined
+            }}
+        >
             <td
                 onClick={onSelect}
                 className={`selectable ${
@@ -34,6 +39,10 @@ export default React.forwardRef(({
                         ? 'selected'
                         : null
                 }`}
+                style={{
+                    color: needsAttention ? '#ff6666' : undefined,
+                    fontWeight: needsAttention ? 'bold' : undefined
+                }}
             >
                 {isEditing ? (
                     <input

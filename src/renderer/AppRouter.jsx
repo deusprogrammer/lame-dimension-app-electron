@@ -77,7 +77,7 @@ function App() {
                     >
                         Dialogue Editor
                     </button>
-                    <button
+                    {/* <button
                         onClick={() => {
                             navigate(
                                 `/editor/script`
@@ -85,7 +85,7 @@ function App() {
                         }}
                     >
                         Character Editor
-                    </button>
+                    </button> */}
                     <button
                         onClick={() => {
                             navigate(

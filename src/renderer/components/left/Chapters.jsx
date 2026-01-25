@@ -13,11 +13,16 @@ const component = ({
     onChapterRemove,
     onChapterCreate,
     onChapterNameChange,
+    chaptersNeedingAttention,
 }) => {
     const selectedHook = useRef(null);
     if (!chapters) {
         return <div className="chapters"></div>;
     }
+
+    useEffect(() => {
+        console.log('Chapters component - chaptersNeedingAttention updated:', chaptersNeedingAttention);
+    }, [chaptersNeedingAttention]);
 
     useEffect(() => {
         if (selectedHook.current) {
@@ -31,26 +36,30 @@ const component = ({
             <div className="scrolling">
                 <table>
                     <tbody>
-                        {Object.keys(chapters).map((chapterName, index) => (
-                            <React.Fragment key={`chapter-${index}`}>
-                                <EditableInput
-                                    ref={selectedChapter === chapterName ? selectedHook : null}
-                                    currentValue={chapterName}
-                                    isChanged={getDiff(`${path}.${chapterName}`, diff)}
-                                    isEditable={editable}
-                                    isSelected={selectedChapter === chapterName}
-                                    onSelect={() => {
-                                        onChapterSelect(chapterName);
-                                    }}
-                                    onSave={(newChapterName) => {
-                                        onChapterNameChange(chapterName, newChapterName);
-                                    }}
-                                    onDelete={() => {
-                                        onChapterRemove(chapterName);
-                                    }}
-                                />
-                            </React.Fragment>
-                        ))}
+                        {Object.keys(chapters).map((chapterName, index) => {
+                            const needsAttention = chaptersNeedingAttention?.[chapterName] || false;
+                            return (
+                                <React.Fragment key={`chapter-${index}`}>
+                                    <EditableInput
+                                        ref={selectedChapter === chapterName ? selectedHook : null}
+                                        currentValue={chapterName}
+                                        isChanged={getDiff(`${path}.${chapterName}`, diff)}
+                                        isEditable={editable}
+                                        isSelected={selectedChapter === chapterName}
+                                        needsAttention={needsAttention}
+                                        onSelect={() => {
+                                            onChapterSelect(chapterName);
+                                        }}
+                                        onSave={(newChapterName) => {
+                                            onChapterNameChange(chapterName, newChapterName);
+                                        }}
+                                        onDelete={() => {
+                                            onChapterRemove(chapterName);
+                                        }}
+                                    />
+                                </React.Fragment>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

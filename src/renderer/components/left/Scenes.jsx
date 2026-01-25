@@ -13,16 +13,19 @@ const component = ({
     onCreateScene,
     onSceneRemove,
     onSceneKeyChange,
+    scenesNeedingAttention,
 }) => {
     const selectedHook = useRef(null);
+
+    useEffect(() => {
+        console.log('Scenes component - scenesNeedingAttention updated:', scenesNeedingAttention);
+    }, [scenesNeedingAttention]);
 
     useEffect(() => {
         if (selectedHook.current) {
             selectedHook.current.scrollIntoView({ block: 'nearest' });
         }
     }, [selectedScene]);
-
-    console.log("SCENES: " + scenes);
 
     if (!scenes && scenes !== {}) {
         return (
@@ -40,6 +43,7 @@ const component = ({
                 <table>
                     <tbody>
                         {Object.keys(scenes).map((name, index) => {
+                            const needsAttention = scenesNeedingAttention?.[name] || false;
                             return (
                                 <React.Fragment key={`scene-${index}`}>
                                     <EditableInput
@@ -48,6 +52,7 @@ const component = ({
                                         isChanged={getDiff(`${path}.${name}`, diff)}
                                         isEditable={editable}
                                         isSelected={selectedScene === name}
+                                        needsAttention={needsAttention}
                                         onSelect={() => {
                                             onSelectScene(name);
                                         }}

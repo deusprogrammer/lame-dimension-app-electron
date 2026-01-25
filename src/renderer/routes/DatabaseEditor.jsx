@@ -118,6 +118,70 @@ export default () => {
         setCategoryData(categoryDataCopy);
     }
 
+    const ensureFieldsExist = (category, item) => {
+        // Ensure all fields from the template exist on the item
+        let template = categories[category]?.template;
+        if (!template) return item;
+
+        let updatedItem = { ...item };
+        let wasUpdated = false;
+
+        template.forEach(({ key, dataType, localized, collectionType }) => {
+            // Check if field is missing or null/undefined
+            const fieldExists = key in updatedItem && updatedItem[key] != null;
+
+            // For arrays, also check if the structure is valid
+            if (fieldExists && collectionType === 'array') {
+                if (localized) {
+                    // Ensure each language has an array
+                    if (typeof updatedItem[key] === 'object' && !Array.isArray(updatedItem[key])) {
+                        for (let lang in updatedItem[key]) {
+                            if (!Array.isArray(updatedItem[key][lang])) {
+                                updatedItem[key][lang] = [];
+                                wasUpdated = true;
+                            }
+                        }
+                    } else {
+                        // Field exists but isn't properly structured
+                        updatedItem[key] = createLocalizationBlock([]);
+                        wasUpdated = true;
+                    }
+                } else if (!Array.isArray(updatedItem[key])) {
+                    updatedItem[key] = [];
+                    wasUpdated = true;
+                }
+            } else if (!fieldExists) {
+                wasUpdated = true;
+
+                // Initialize missing field with proper default
+                if (localized && collectionType === 'array') {
+                    updatedItem[key] = createLocalizationBlock([]);
+                } else if (localized && dataType === 'text') {
+                    updatedItem[key] = createLocalizationBlock('');
+                } else if (collectionType === 'array') {
+                    updatedItem[key] = [];
+                } else {
+                    switch (dataType) {
+                        case 'number':
+                            updatedItem[key] = 0;
+                            break;
+                        case 'text':
+                            updatedItem[key] = '';
+                            break;
+                        case 'checkbox':
+                        case 'boolean':
+                            updatedItem[key] = false;
+                            break;
+                        default:
+                            updatedItem[key] = '';
+                    }
+                }
+            }
+        });
+
+        return wasUpdated ? updatedItem : item;
+    };
+
     const restructureLocalizedData = (category, field, isLocalized) => {
         let categoryDataCopy = {...categoryData };
         for (let key in categoryDataCopy[category]) {
@@ -144,24 +208,38 @@ export default () => {
         let keyChanges = [];
         let oldCategory = structuredClone(categories[category]);
 
-        // Collect key changes
-        for (let index in oldCategory.template) {
-            let oldKey = oldCategory.template[index].key;
-            let newKey = updatedCategory.template[index].key;
-            if (oldKey !== updatedCategory.template[index].key) {
-                keyChanges.push([oldKey, newKey]);
-            }
-        };
+        // Build a set of all keys in the new template for quick lookup
+        let newKeys = new Set(updatedCategory.template.map(field => field.key));
 
-        // Go through key changes and rename keys deleting the old key
+        // Compare templates by position to detect renames
+        const maxLength = Math.max(oldCategory.template.length, updatedCategory.template.length);
+        for (let i = 0; i < maxLength; i++) {
+            // Skip if we're past the end of either array
+            if (i >= oldCategory.template.length || i >= updatedCategory.template.length) {
+                continue;
+            }
+
+            let oldKey = oldCategory.template[i].key;
+            let newKey = updatedCategory.template[i].key;
+
+            // If keys are different at the same position
+            if (oldKey !== newKey) {
+                // Check if the old key still exists anywhere in new template
+                if (!newKeys.has(oldKey)) {
+                    // Old key doesn't exist in new template = it was renamed
+                    keyChanges.push([oldKey, newKey]);
+                }
+                // If old key exists elsewhere, it was reordered, not renamed
+            }
+        }
+
+        // Apply the renames to all category items
         for (let [oldKey, newKey] of keyChanges) {
             for (let itemKey in categoryDataCopy[category]) {
                 let item = categoryDataCopy[category][itemKey];
-                for (let key in item) {
-                    if (key === oldKey) {
-                        categoryDataCopy[category][itemKey][newKey] = categoryDataCopy[category][itemKey][oldKey];
-                        delete categoryDataCopy[category][itemKey][oldKey];
-                    }
+                if (oldKey in item) {
+                    categoryDataCopy[category][itemKey][newKey] = categoryDataCopy[category][itemKey][oldKey];
+                    delete categoryDataCopy[category][itemKey][oldKey];
                 }
             }
         }
@@ -180,6 +258,55 @@ export default () => {
         });
 
         renameChangedFields(category, updated);
+
+        // Backfill missing fields on all existing items
+        let categoryDataCopy = {...categoryData};
+        if (categoryDataCopy[category]) {
+            // Create temporary categories with updated template for field checking
+            let tempCategories = {...categories, [category]: updated};
+
+            for (let itemKey in categoryDataCopy[category]) {
+                // Pass temp categories to a modified ensureFieldsExist check
+                let template = tempCategories[category]?.template;
+                if (template) {
+                    let updatedItem = { ...categoryDataCopy[category][itemKey] };
+                    let wasUpdated = false;
+
+                    template.forEach(({ key, dataType, localized, collectionType }) => {
+                        if (key in updatedItem) return;
+                        wasUpdated = true;
+
+                        if (localized && collectionType === 'array') {
+                            updatedItem[key] = createLocalizationBlock([]);
+                        } else if (localized && dataType === 'text') {
+                            updatedItem[key] = createLocalizationBlock('');
+                        } else if (collectionType === 'array') {
+                            updatedItem[key] = [];
+                        } else {
+                            switch (dataType) {
+                                case 'number':
+                                    updatedItem[key] = 0;
+                                    break;
+                                case 'text':
+                                    updatedItem[key] = '';
+                                    break;
+                                case 'checkbox':
+                                case 'boolean':
+                                    updatedItem[key] = false;
+                                    break;
+                                default:
+                                    updatedItem[key] = '';
+                            }
+                        }
+                    });
+
+                    if (wasUpdated) {
+                        categoryDataCopy[category][itemKey] = updatedItem;
+                    }
+                }
+            }
+            setCategoryData(categoryDataCopy);
+        }
 
         categoriesCopy[category] = updated;
         setCategories(categoriesCopy);
@@ -220,7 +347,7 @@ export default () => {
         let category = categories[selectedCategory];
         category.template.forEach(({key, dataType, localized, collectionType}) => {
             if (localized && collectionType === 'array') {
-                newItem[key] = createLocalizationBlock(() => new Array());
+                newItem[key] = createLocalizationBlock([]);
                 return;
             } else if (localized && dataType === 'text') {
                 newItem[key] = createLocalizationBlock('');
@@ -250,6 +377,52 @@ export default () => {
         categoryDataCopy[selectedCategory] = categoryItemsCopy;
         setCategoryData(categoryDataCopy);
     }
+
+    const removeCategoryItem = (categoryItemKey) => {
+        let categoryDataCopy = {...categoryData};
+        let categoryItemsCopy = {...categoryData[selectedCategory]};
+        delete categoryItemsCopy[categoryItemKey];
+        categoryDataCopy[selectedCategory] = categoryItemsCopy;
+        setCategoryData(categoryDataCopy);
+
+        // Clear selection if we deleted the selected item
+        if (selectedCategoryItem === categoryItemKey) {
+            setSelectedCategoryItem(null);
+        }
+    }
+
+    const cleanupDeletedFields = () => {
+        let categoryDataCopy = {...categoryData};
+        let cleaned = false;
+
+        // For each category
+        for (let categoryKey in categories) {
+            let template = categories[categoryKey].template;
+            let validKeys = new Set(template.map(field => field.key));
+
+            // For each item in that category
+            if (categoryDataCopy[categoryKey]) {
+                for (let itemKey in categoryDataCopy[categoryKey]) {
+                    let item = categoryDataCopy[categoryKey][itemKey];
+
+                    // Remove any fields that aren't in the template
+                    for (let fieldKey in item) {
+                        if (!validKeys.has(fieldKey) && fieldKey !== 'id' && fieldKey !== '_id') {
+                            delete categoryDataCopy[categoryKey][itemKey][fieldKey];
+                            cleaned = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (cleaned) {
+            setCategoryData(categoryDataCopy);
+            toast.success('Deleted fields cleaned up successfully');
+        } else {
+            toast.info('No cleanup needed');
+        }
+    };
 
     let selectedCategoryComponent;
     if (categories[selectedCategory]) {
@@ -283,6 +456,21 @@ export default () => {
     if (categories[selectedCategory] && selectedCategoryItem) {
         let categoryItemData =
             categoryData[selectedCategory][selectedCategoryItem];
+
+        // Ensure all fields from template exist on the item before rendering
+        let ensuredItemData = ensureFieldsExist(selectedCategory, categoryItemData);
+
+        // If fields were added, persist them to state
+        if (ensuredItemData !== categoryItemData) {
+            let categoryDataCopy = {...categoryData};
+            categoryDataCopy[selectedCategory] = {
+                ...categoryDataCopy[selectedCategory],
+                [selectedCategoryItem]: ensuredItemData
+            };
+            setCategoryData(categoryDataCopy);
+            categoryItemData = ensuredItemData;
+        }
+
         selectedCategoryItemComponent = (
             <Cacher
                 cacheMap={{
@@ -345,7 +533,7 @@ export default () => {
                         }}
                         onCreate={addCategoryItem}
                         onKeyChange={updateCategoryItemKey}
-                        onRemove={()=>{}}
+                        onRemove={removeCategoryItem}
                         editable={editable}
                     />
                 ) : null}
@@ -362,6 +550,21 @@ export default () => {
                     toast.info("Project Saved");
                 }}>
                     Save
+                </button>
+                <button
+                    onClick={() => {
+                        window.electron.ipcRenderer.sendMessage('openProjectDirectory');
+                    }}
+                >
+                    Open Script Directory
+                </button>
+                <button onClick={() => {
+                    cleanupDeletedFields();
+                    let updatedScript = {name, categoryData, categories};
+                    window.electron.ipcRenderer.sendMessage('saveDatabase', updatedScript);
+                    toast.info("Project Cleaned Up and Saved");
+                }}>
+                    Clean Up and Save
                 </button>
                 <button
                     onClick={() => {

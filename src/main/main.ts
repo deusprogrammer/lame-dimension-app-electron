@@ -300,9 +300,11 @@ ipcMain.handle('getScriptName', (event, character, emote) => {
 
 ipcMain.handle('saveScript', async (event, script) => {
     script = stripNoSqlRemnants(script);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${config.currentProject}/script-${timestamp}.bak.json`;
     fs.copyFileSync(
         `${config.currentProject}/script.json`,
-        `${config.currentProject}/script.json.bak`,
+        backupPath,
     );
     fs.writeFileSync(
         `${config.currentProject}/script.json`,
@@ -312,14 +314,23 @@ ipcMain.handle('saveScript', async (event, script) => {
 
 ipcMain.handle('saveDatabase', async (event, db) => {
     db = stripNoSqlRemnants(db);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${config.currentProject}/database-${timestamp}.bak.json`;
     fs.copyFileSync(
         `${config.currentProject}/database.json`,
-        `${config.currentProject}/database.json.bak`,
+        backupPath,
     );
     fs.writeFileSync(
         `${config.currentProject}/database.json`,
         JSON.stringify(db, null, 5),
     );
+});
+
+ipcMain.handle('openProjectDirectory', async (event) => {
+    if (!config.currentProject) {
+        return;
+    }
+    shell.openPath(config.currentProject);
 });
 
 ipcMain.handle('mergeFile', async (event) => {

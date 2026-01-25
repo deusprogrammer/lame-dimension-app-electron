@@ -51,6 +51,17 @@ export default ({
         }
     }
 
+    const deleteField = (index) => {
+        let copy = {...category};
+        let template = [...category.template];
+        template.splice(index, 1);
+        copy.template = template;
+
+        if (onUpdate) {
+            onUpdate(copy);
+        }
+    }
+
     return (
         <>
             <table className='data-table'>
@@ -80,6 +91,7 @@ export default ({
                         <th>Collection Type</th>
                         <th>Type</th>
                         <th>Localized</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,10 +113,11 @@ export default ({
                                 </select>
                             </td>
                             <td><input type='checkbox' onChange={({target: {checked}}) => {updateField(index, 'localized', checked)}} checked={localized} /></td>
+                            <td><button type='button' onClick={() => {deleteField(index)}}>Delete</button></td>
                         </tr>
                     ))}
                     <tr>
-                        <td colSpan={6}><button type='button' onClick={() => {addField()}}>Add Field</button></td>
+                        <td colSpan={7}><button type='button' onClick={() => {addField()}}>Add Field</button></td>
                     </tr>
                 </tbody>
             </table>
