@@ -17,6 +17,28 @@ const component = ({
 
     let { positions, active } = scene.dialogue[index];
 
+    const getCharacterEmotes = (characterKey) => {
+        return characters?.[characterKey]?.emotes || [];
+    };
+
+    const getValidEmote = (characterKey, emote) => {
+        let emotes = getCharacterEmotes(characterKey);
+
+        if (!emotes.length) {
+            return '';
+        }
+
+        if (emote && emotes.includes(emote)) {
+            return emote;
+        }
+
+        if (emotes.includes('neutral')) {
+            return 'neutral';
+        }
+
+        return emotes[0];
+    };
+
     const updatePositionName = (position, characterKey) => {
         let dialogueCopy = { ...scene.dialogue[index] };
         let copy = { ...dialogueCopy.positions };
@@ -28,7 +50,7 @@ const component = ({
         if (characterKey !== 'none') {
             copy[position] = {
                 name: characterKey,
-                emote: 'neutral',
+                emote: getValidEmote(characterKey),
             };
         }
         dialogueCopy.positions = copy;
@@ -69,6 +91,13 @@ const component = ({
                 {['left', 'leftFront', 'right', 'rightFront']
                     .filter((position) => position.toLowerCase().includes(side))
                     .map((position) => {
+                        let characterKey = positions[position]?.name;
+                        let emotes = getCharacterEmotes(characterKey);
+                        let selectedEmote = getValidEmote(
+                            characterKey,
+                            positions[position]?.emote
+                        );
+
                         return (
                             <div key={`pos-${position}`}>
                                 <div>{position.toUpperCase()}</div>
@@ -142,12 +171,10 @@ const component = ({
                                                 value
                                             );
                                         }}
-                                        value={positions[position]?.emote}
+                                        value={selectedEmote}
                                         disabled={!editable}
                                     >
-                                        {characters[
-                                            positions[position]?.name
-                                        ]?.emotes.map((emote) => {
+                                        {emotes.map((emote) => {
                                             return (
                                                 <option
                                                     key={`${position}-${emote}`}

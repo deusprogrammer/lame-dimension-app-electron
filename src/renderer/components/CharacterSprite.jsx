@@ -34,7 +34,7 @@ const getBase64 = async (url) => {
     return btoa(String.fromCharCode(...new Uint8Array(response.data)));
 };
 
-const Component = ({ position, dialogue, active }) => {
+const Component = ({ position, dialogue, active, characters }) => {
     const [fileList, setFileList] = useState([]);
     const [height, setHeight] = useState(0);
     const [width, setWidth] = useState(0);
@@ -86,6 +86,28 @@ const Component = ({ position, dialogue, active }) => {
         }
     };
 
+    const getValidEmote = (positionData) => {
+        if (!positionData?.name) {
+            return positionData?.emote;
+        }
+
+        let availableEmotes = characters?.[positionData.name]?.emotes;
+
+        if (!availableEmotes?.length) {
+            return positionData?.emote;
+        }
+
+        if (positionData?.emote && availableEmotes.includes(positionData.emote)) {
+            return positionData.emote;
+        }
+
+        if (availableEmotes.includes('neutral')) {
+            return 'neutral';
+        }
+
+        return availableEmotes[0];
+    };
+
     useEffect(() => {
         if (position && dialogue) {
             if (!dialogue.positions[position]) {
@@ -93,7 +115,7 @@ const Component = ({ position, dialogue, active }) => {
             }
 
             let character = dialogue.positions[position].name;
-            let emote = dialogue.positions[position].emote;
+            let emote = getValidEmote(dialogue.positions[position]);
             loadTextures(character, emote);
         }
         setIsSpeaking(active === position);

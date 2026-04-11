@@ -35,6 +35,8 @@ function App() {
     const [editable, setEditable] = useState(true);
     const [mDiff, setMDiff] = useState();
 
+    const [search, setSearch] = useState('');
+
     // Memoize attention needed checks to ensure they update with chapters state
     const chaptersNeedingAttention = useMemo(() => {
         console.log('Recalculating chaptersNeedingAttention...');
@@ -110,6 +112,25 @@ function App() {
 
             if (!script.name) {
                 script.name = 'New Script';
+            }
+
+            // Add an order property to each chapter and scene based on their current order to enable reordering if it doesn't exist
+            let chapterOrder = 0;
+            for (let chapterKey in script.chapters) {
+                if (!script.chapters[chapterKey].order) {
+                    script.chapters[chapterKey].order = chapterOrder++;
+                } else {
+                    chapterOrder = script.chapters[chapterKey].order + 1;
+                }
+
+                let sceneOrder = 0;
+                for (let sceneKey in script.chapters[chapterKey].scenes) {
+                    if (!script.chapters[chapterKey].scenes[sceneKey].order) {
+                        script.chapters[chapterKey].scenes[sceneKey].order = sceneOrder++;
+                    } else {
+                        sceneOrder = script.chapters[chapterKey].scenes[sceneKey].order + 1;
+                    }
+                }
             }
 
             setChapters(script.chapters);
@@ -198,7 +219,7 @@ function App() {
 
     const addChapter = () => {
         let chapterName = `Chapter${Object.keys(chapters).length}`;
-        if (chapters.length === 0) {
+        if (Object.keys(chapters).length === 0) {
             chapterName = 'Prologue';
         }
         let copy = { ...chapters };
@@ -206,6 +227,7 @@ function App() {
             name: chapterName,
             scenes: {},
             updated: Date.now(),
+            order: Object.keys(chapters).length,
         };
         setChapters(copy);
         setScene(null);
@@ -217,6 +239,7 @@ function App() {
     const createScene = () => {
         let newSceneKey = `scene${dialogCounter++}`;
         let newScene = {
+            order: Object.keys(chapters[chapter]?.scenes ?? {}).length,
             options: {
                 smallerPortraits: false,
                 disablePortraits: false,
@@ -277,6 +300,44 @@ function App() {
         setChapters(copy);
         setScript({ ...script, chapters: copy });
     };
+
+    const onChapterReorder = (chapterKey, direction) => {
+        console.log(`Reordering chapter "${chapterKey}" ${direction}`);
+
+        const chapterOrder = chapters[chapterKey].order;
+        const swapWithOrder = direction === 'up' ? chapterOrder - 1 : chapterOrder + 1;
+
+        let copy = { ...chapters };
+        for (let key in copy) {
+            if (copy[key].order === swapWithOrder) {
+                copy[key].order = chapterOrder;
+            }
+        }
+        copy[chapterKey].order = swapWithOrder;
+
+        console.log('Updated chapter order:', Object.entries(copy).map(([key, value]) => ({ key, order: value.order })));
+
+        setChapters(copy);
+        setScript({ ...script, chapters: copy });
+    }
+
+    const onSceneReorder = (sceneKey, direction) => {
+        console.log(`Reordering scene "${sceneKey}" ${direction}`);
+
+        const sceneOrder = chapters[chapter].scenes[sceneKey].order;
+        const swapWithOrder = direction === 'up' ? sceneOrder - 1 : sceneOrder + 1;
+
+        let copy = { ...chapters };
+        for (let key in copy[chapter].scenes) {
+            if (copy[chapter].scenes[key].order === swapWithOrder) {
+                copy[chapter].scenes[key].order = sceneOrder;
+            }
+        }
+        copy[chapter].scenes[sceneKey].order = swapWithOrder;
+
+        setChapters(copy);
+        setScript({ ...script, chapters: copy });
+    }
 
     const getString = (obj, op) => {
         if (op === "REMOVED") {
@@ -363,36 +424,97 @@ function App() {
                         </tbody>
                     </table>
                 </div>
-                <Chapters
-                    selectedChapter={chapter}
-                    chapters={chapters}
-                    editable={editable}
-                    diff={[]}
-                    path={'chapters'}
-                    onChapterSelect={(chapter) => {
-                        setChapter(chapter);
-                        setScene(null);
-                    }}
-                    onChapterCreate={addChapter}
-                    onChapterRemove={removeChapter}
-                    onChapterNameChange={changeChapterName}
-                    chaptersNeedingAttention={chaptersNeedingAttention}
-                />
-                <Scenes
-                    scenes={chapters[chapter]?.scenes}
-                    selectedScene={scene}
-                    editable={editable}
-                    diff={[]}
-                    path={`chapters.${chapter}.scenes`}
-                    onSelectScene={(key) => {
-                        setScene(key);
-                        setDialogueIndex(0);
-                    }}
-                    onCreateScene={createScene}
-                    onSceneRemove={removeScene}
-                    onSceneKeyChange={changeSceneKey}
-                    scenesNeedingAttention={scenesNeedingAttention}
-                />
+                <div>
+                    <input type='text' placeholder='Search...' value={search} onChange={({target: {value}}) => setSearch(value)} />
+                    <button
+                        onClick={() => {
+                            setSearch('');
+                        }}
+                        disabled={!search}
+                    >
+                        Clear
+                    </button>
+                </div>
+                {search ? (
+                    <div className="search-results">
+                        <h3>Search Results for "{search}"</h3>
+                        {Object.entries(chapters).map(([chapterKey, chapterData]) => {
+                            let matchingScenes = [];
+                            for (let sceneKey in chapterData.scenes) {
+                                let sceneData = chapterData.scenes[sceneKey];
+                                if (sceneKey.includes(search)) {
+                                    matchingScenes.push(sceneKey);
+                                }
+                            }
+
+                            if (matchingScenes.length > 0) {
+                                return (
+                                    <>
+                                        <h4>{chapterKey}</h4>
+                                        <Scenes
+                                            scenes={matchingScenes.reduce((acc, key) => {
+                                                acc[key] = chapterData.scenes[key];
+                                                return acc;
+                                            }, {})}
+                                            selectedScene={scene}
+                                            editable={editable}
+                                            diff={[]}
+                                            searchMode={true}
+                                            path={`chapters.${chapterKey}.scenes`}
+                                            onSelectScene={(key) => {
+                                                setChapter(chapterKey);
+                                                setScene(key);
+                                                setDialogueIndex(0);
+                                            }}
+                                            onCreateScene={createScene}
+                                            onSceneRemove={removeScene}
+                                            onSceneKeyChange={changeSceneKey}
+                                            onSceneReorder={onSceneReorder}
+                                            scenesNeedingAttention={scenesNeedingAttention}
+                                        />
+                                    </>
+                                )
+                            } else {
+                                return null;
+                            }
+                        })}
+                    </div>
+                ) : (
+                    <>
+                        <Chapters
+                            selectedChapter={chapter}
+                            chapters={chapters}
+                            editable={editable}
+                            diff={[]}
+                            path={'chapters'}
+                            onChapterSelect={(chapter) => {
+                                setChapter(chapter);
+                                setScene(null);
+                            }}
+                            onChapterCreate={addChapter}
+                            onChapterRemove={removeChapter}
+                            onChapterNameChange={changeChapterName}
+                            onChapterReorder={onChapterReorder}
+                            chaptersNeedingAttention={chaptersNeedingAttention}
+                        />
+                        <Scenes
+                            scenes={chapters[chapter]?.scenes}
+                            selectedScene={scene}
+                            editable={editable}
+                            diff={[]}
+                            path={`chapters.${chapter}.scenes`}
+                            onSelectScene={(key) => {
+                                setScene(key);
+                                setDialogueIndex(0);
+                            }}
+                            onCreateScene={createScene}
+                            onSceneRemove={removeScene}
+                            onSceneKeyChange={changeSceneKey}
+                            onSceneReorder={onSceneReorder}
+                            scenesNeedingAttention={scenesNeedingAttention}
+                        />
+                    </>
+                )}
                 <Languages
                     selectedLanguage={language}
                     defaultLanguage={defaultLanguage}
@@ -492,6 +614,7 @@ function App() {
                         <CharacterSprites
                             scene={chapters?.[chapter]?.scenes?.[scene] ?? {}}
                             index={dialogueIndex}
+                            characters={script.characters}
                         />
                         <TextBox
                             language={language}

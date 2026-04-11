@@ -2,7 +2,7 @@ import React from 'react';
 
 import CharacterSprite from '../CharacterSprite';
 
-const Component = ({ scene, index }) => {
+const Component = ({ scene, index, characters }) => {
     if (!scene?.dialogue?.[index]) {
         return <></>;
     }
@@ -23,21 +23,25 @@ const Component = ({ scene, index }) => {
                 position="left"
                 dialogue={scene.dialogue[index]}
                 active={active}
+                characters={characters}
             />
             <CharacterSprite
                 position="right"
                 dialogue={scene.dialogue[index]}
                 active={active}
+                characters={characters}
             />
             <CharacterSprite
                 position="leftFront"
                 dialogue={scene.dialogue[index]}
                 active={active}
+                characters={characters}
             />
             <CharacterSprite
                 position="rightFront"
                 dialogue={scene.dialogue[index]}
                 active={active}
+                characters={characters}
             />
         </div>
     );

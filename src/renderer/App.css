@@ -29,6 +29,13 @@ body {
     justify-content: flex-start;
     width: 300px;
     text-align: center;
+    min-height: 0;
+}
+
+.search-results {
+    height: 300px;
+    overflow-y: auto;
+    text-align: left;
 }
 
 .center {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { getDiff } from '../../util/util';
 import EditableInput from '../EditableInput';
@@ -13,12 +13,10 @@ const component = ({
     onChapterRemove,
     onChapterCreate,
     onChapterNameChange,
+    onChapterReorder,
     chaptersNeedingAttention,
 }) => {
     const selectedHook = useRef(null);
-    if (!chapters) {
-        return <div className="chapters"></div>;
-    }
 
     useEffect(() => {
         console.log('Chapters component - chaptersNeedingAttention updated:', chaptersNeedingAttention);
@@ -30,13 +28,21 @@ const component = ({
         }
     }, [selectedChapter]);
 
+    if (!chapters) {
+        return <div className="chapters"></div>;
+    }
+
     return (
         <div className="chapters">
             <h2>Chapters</h2>
             <div className="scrolling">
                 <table>
                     <tbody>
-                        {Object.keys(chapters).map((chapterName, index) => {
+                        {Object.entries(chapters).sort(([aName, aData], [bName, bData]) => {
+                            const aOrder = aData.order ?? Number.MAX_SAFE_INTEGER;
+                            const bOrder = bData.order ?? Number.MAX_SAFE_INTEGER;
+                            return aOrder - bOrder;
+                        }).map(([chapterName], index) => {
                             const needsAttention = chaptersNeedingAttention?.[chapterName] || false;
                             return (
                                 <React.Fragment key={`chapter-${index}`}>
@@ -55,6 +61,12 @@ const component = ({
                                         }}
                                         onDelete={() => {
                                             onChapterRemove(chapterName);
+                                        }}
+                                        onReorderUp={() => {
+                                            onChapterReorder(chapterName, 'up');
+                                        }}
+                                        onReorderDown={() => {
+                                            onChapterReorder(chapterName, 'down');
                                         }}
                                     />
                                 </React.Fragment>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { getDiff } from '../../util/util';
 import EditableInput from '../EditableInput';
@@ -9,10 +9,12 @@ const component = ({
     editable,
     diff,
     selectedScene,
+    searchMode,
     onSelectScene,
     onCreateScene,
     onSceneRemove,
     onSceneKeyChange,
+    onSceneReorder,
     scenesNeedingAttention,
 }) => {
     const selectedHook = useRef(null);
@@ -30,19 +32,23 @@ const component = ({
     if (!scenes && scenes !== {}) {
         return (
             <div className="scenes">
-                <h2>Scenes</h2>
-                <div className="scrolling"></div>
+                {!searchMode && <h2>Scenes</h2>}
+                <div className={searchMode ? undefined : 'scrolling'}></div>
             </div>
         );
     }
 
     return (
         <div className="scenes">
-            <h2>Scenes</h2>
-            <div className="scrolling">
+            {!searchMode && <h2>Scenes</h2>}
+            <div className={searchMode ? undefined : 'scrolling'}>
                 <table>
                     <tbody>
-                        {Object.keys(scenes).map((name, index) => {
+                        {Object.entries(scenes).sort(([aName, aData], [bName, bData]) => {
+                            const aOrder = aData.order ?? Number.MAX_SAFE_INTEGER;
+                            const bOrder = bData.order ?? Number.MAX_SAFE_INTEGER;
+                            return aOrder - bOrder;
+                        }).map(([name, data], index) => {
                             const needsAttention = scenesNeedingAttention?.[name] || false;
                             return (
                                 <React.Fragment key={`scene-${index}`}>
@@ -62,6 +68,12 @@ const component = ({
                                         onDelete={() => {
                                             onSceneRemove(name);
                                         }}
+                                        onReorderUp={() => {
+                                            onSceneReorder(name, 'up');
+                                        }}
+                                        onReorderDown={() => {
+                                            onSceneReorder(name, 'down');
+                                        }}
                                     />
                                 </React.Fragment>
                             );
@@ -69,11 +81,13 @@ const component = ({
                     </tbody>
                 </table>
             </div>
-            <div>
-                <button onClick={onCreateScene} disabled={!editable}>
-                    Add Scene
-                </button>
-            </div>
+            {!searchMode ? (
+                <div>
+                    <button onClick={onCreateScene} disabled={!editable}>
+                        Add Scene
+                    </button>
+                </div>
+            ) : null}
         </div>
     );
 };

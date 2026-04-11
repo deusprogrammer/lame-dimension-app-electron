@@ -5,6 +5,8 @@ import {
     faTrashCan,
     faPenToSquare,
     faCheck,
+    faArrowUp,
+    faArrowDown,
 } from '@fortawesome/free-solid-svg-icons';
 
 export default React.forwardRef(({
@@ -15,7 +17,9 @@ export default React.forwardRef(({
     needsAttention,
     onSave,
     onDelete,
-    onSelect
+    onSelect,
+    onReorderUp,
+    onReorderDown,
 }, ref) => {
     const [editedValue, setEditedValue] = useState(currentValue);
     const [isEditing, setIsEditing] = useState(false);
@@ -115,6 +119,16 @@ export default React.forwardRef(({
                         <FontAwesomeIcon
                             icon={faTrashCan}
                         />
+                    </td>
+                    <td className="order-up-button" onClick={() => {
+                        onReorderUp();
+                    }}>
+                        <FontAwesomeIcon icon={faArrowUp} />
+                    </td>
+                    <td className="order-down-button" onClick={() => {
+                        onReorderDown();
+                    }}>
+                        <FontAwesomeIcon icon={faArrowDown} />
                     </td>
                 </>
             ) : null}
